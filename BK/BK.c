@@ -9,6 +9,7 @@
 #include <avr/interrupt.h>
 #include <avr/wdt.h>
 #include <util/delay.h>
+#include <util/crc16.h>
 #include "spi_for_MCP3201.h"
 #include "UZD.h"
 
@@ -17,19 +18,26 @@
 
 volatile uint8_t	num = 1;								// Номер принятого байта по UART
 volatile uint8_t	rec_byte[4];							// Массив принимаемых байт. [0] - не используется
+volatile uint8_t	tran_byte[6];							// Массив отправляемых байт. [0] - не используется
 volatile uint8_t	recMessageOK;							// Флаг завершения приема сообщения
 
 
 ISR (USART0_RX_vect) {										// Функция приема байта по UART через прерывание
 	rec_byte[num] = UDR;									// Считать данные
 	if(num==1 && rec_byte[1] != 0x7E) return;
-	num++;
-	if (num == 4) {
+	if(num == 3) {
 		num = 1;
-		if(rec_byte[1] + rec_byte[2] != rec_byte[3]) return;// Если КС не совпала, выйти и начать сначала
-		UCSRB &= ~(1<<RXCIE);								// Выкл прерывание по приему
-		recMessageOK = 1;
+		uint8_t crc8 = 0xFF;
+		for (uint8_t i=1; i<=2; i++) {
+			crc8 = _crc8_ccitt_update(crc8, rec_byte[i]);
+		}
+		if(crc8 == rec_byte[3]) {
+			recMessageOK = 1;
+			UCSRB &= ~(1<<RXCIE);	// Выкл прерывание по приему
+		}
+		else return;				// Если КС не совпала, выйти и начать сначала
 	}
+	else num++;
 }
 
 void	uart_init();
@@ -105,12 +113,16 @@ int main(void)
 			}
 			
 			// Отправка данных в UART
-			uart_transmit_byte(0x7E);
-			uint8_t byte2 = pumpStatus<<7;
-			uart_transmit_byte(byte2);
-			uart_transmit_byte(waterPressure);
-			uart_transmit_byte(waterLevel);
-			uart_transmit_byte(0x7E + byte2 + waterPressure + waterLevel);
+			tran_byte[1] = 0x7E;			uart_transmit_byte(tran_byte[1]);
+			tran_byte[2] = pumpStatus<<7;	uart_transmit_byte(tran_byte[2]);
+			tran_byte[3] = waterPressure;	uart_transmit_byte(tran_byte[3]);
+			tran_byte[4] = waterLevel;		uart_transmit_byte(tran_byte[4]);
+			// Подсчет контрольной суммы
+			uint8_t crc8 = 0xFF;
+			for (uint8_t i=1; i<=4; i++) {
+				crc8 = _crc8_ccitt_update(crc8, tran_byte[i]);
+			}
+											uart_transmit_byte(tran_byte[5]);
 			while ( !(UCSRA & (1<<TXC)) );		// Ждем завершения передачи
 			UCSRA |= 1<<TXC;					// Сбрасываем флаг завершения передачи
 			
