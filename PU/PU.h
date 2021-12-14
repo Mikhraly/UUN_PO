@@ -52,14 +52,14 @@ ISR (USART_UDRE_vect) {						// Функция передачи байта по UART через прерывание
 	}	else num++;
 }
 
-ISR (USART_TX_vect) {
+ISR (USART_TXC_vect) {
 	flag.tranMessageOK = 1;					// Сообщение успешно отправлено
 	UCSRB &= ~(1<<TXCIE);					// ВЫКЛ прерывание по завершению передачи
 	PORTD &= ~(1<<4);						// MAX485 на прием
 	UCSRB |= 1<<RXCIE;						// ВКЛ прерывание по завершению приема
 }
 
-ISR (USART_RX_vect) {						// Функция приема байта по UART через прерывание
+ISR (USART_RXC_vect) {						// Функция приема байта по UART через прерывание
 	rec_byte[num] = UDR;					// Считать данные
 	if (num == 1 && rec_byte[1] != 0x7E) return;
 	if (num == 5) {

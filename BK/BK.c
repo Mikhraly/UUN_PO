@@ -22,7 +22,7 @@ volatile uint8_t	tran_byte[6];							// Массив отправляемых байт. [0] - не испол
 volatile uint8_t	recMessageOK;							// Флаг завершения приема сообщения
 
 
-ISR (USART0_RX_vect) {										// Функция приема байта по UART через прерывание
+ISR (USART_RX_vect) {										// Функция приема байта по UART через прерывание
 	rec_byte[num] = UDR;									// Считать данные
 	if(num==1 && rec_byte[1] != 0x7E) return;
 	if(num == 3) {
