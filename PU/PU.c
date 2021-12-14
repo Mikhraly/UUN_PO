@@ -11,6 +11,7 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include <string.h>
+#include <util/crc16.h>
 #include "UART.h"
 #include "HD44780.h"
 #include "PU.h"
@@ -95,7 +96,7 @@ int main(void)
 			if (PINA & 1<<0) {				// Автоматический режим
 				if (data.watterLevel<30 && data.pumpStatus!=1)	com.pumpON = 1;		else com.pumpON = 0;
 				if (data.watterLevel>90 && data.pumpStatus==1)	com.pumpOFF = 1;	else com.pumpOFF = 0;
-				} else {					// Ручной режим
+			} else {					// Ручной режим
 				if (flag.manON && data.pumpStatus!=1)	com.pumpON = 1;		else com.pumpON = 0;
 				if (flag.manOFF && data.pumpStatus==1)	com.pumpOFF = 1;	else com.pumpOFF = 0;
 			}
@@ -113,7 +114,7 @@ int main(void)
 		// ...Если насос включен и давления нет, то выкл и ошибка
 		// ...Если команда на ВЫКЛ, а статус ВКЛ более 5 мин., то выкл и и ошибка
 		
-		
+		// Подключить модуль crc16
     }
 }
 
@@ -138,14 +139,19 @@ void ports_init() {
 }
 
 void tran_message() {	// Формирование передаваемого сообщения
-	tran_byte[1] = 0x7E;																				// Первый байт - Заголовок
-	tran_byte[2] =	com.restart<<7 | com.pumpStatus<<4 | com.pumpPressure<<3 | com.watterLevel<<2 |		// Второй байт - Набор команд
-					com.pumpOFF<<1 | com.pumpON<<0;
-	tran_byte[3] = tran_byte[1] + tran_byte[2];															// Третий байт - контрольная сумма
+	tran_byte[1] = 0x7E;								// Первый байт - Заголовок
+	tran_byte[2] =	com.restart<<7 | com.pumpStatus<<4 | com.pumpPressure<<3 | com.watterLevel<<2 |
+					com.pumpOFF<<1 | com.pumpON<<0;		// Второй байт - Набор команд
+	// Считаем контрольную сумму
+	uint8_t crc8 = 0xFF;
+	for (uint8_t i=1; i<=2; i++) {
+		crc8 = _crc8_ccitt_update(crc8, tran_byte[i]);
+	}
+	tran_byte[3] = crc8;								// Третий байт - контрольная сумма
 }
 
 void rec_message() {	// Расшифровка принятого сообщения
-	data.pumpStatus = (rec_byte[2] & 1<<7)? 1 : 0;	// Состояние насоса (вкл/выкл)
-	data.pumpPressure = rec_byte[3];				// Давление насоса в атм. bbbb,bbbb
-	data.watterLevel = rec_byte[4];					// Уровень воды в см (расстояние от датчика до поверхности)
+	data.pumpStatus = (rec_byte[2] & 1<<7)? 1 : 0;		// Состояние насоса (вкл/выкл)
+	data.pumpPressure = rec_byte[3];					// Давление насоса в атм. bbbb,bbbb
+	data.watterLevel = rec_byte[4];						// Уровень воды в см (расстояние от датчика до поверхности)
 }

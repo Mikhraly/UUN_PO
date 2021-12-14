@@ -65,10 +65,16 @@ ISR (USART_RX_vect) {						// Функция приема байта по UART через прерывание
 	if (num == 5) {
 		num = 1;
 		UCSRB &= ~(1<<RXCIE);				// ВЫКЛ прерывание по приему
-		if(rec_byte[1]==0x7E && rec_byte[1]+rec_byte[2]+rec_byte[3]+rec_byte[4]==rec_byte[5])
+		// Считаем и проверяем контрольную сумму
+		uint8_t crc8 = 0xFF;
+		for (uint8_t i=1; i<=4; i++) {
+			crc8 = _crc8_ccitt_update(crc8, rec_byte[i]);
+		}
+		if(crc8 == rec_byte[5])
 				flag.recMessageOK = 1;		// Сообщение успешно принято
 		else	flag.recMessageNOK = 1;		// Сообщение принято с ошибками
-	}	else num++;
+	}
+	else num++;
 }
 
 
