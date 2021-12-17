@@ -20,7 +20,6 @@
 int main(void)
 {
 	// Задание начальных команд
-	com.restart = 0;
 	com.pumpON = 0;
 	com.pumpOFF = 1;
 	com.pumpStatus = 1;
@@ -64,7 +63,7 @@ int main(void)
 									(data.pumpPressure & 0x0F)+48 };
 									
 			// Вывод данных на дисплей
-			if (!flag.recMessagePRE) {
+			if (!flag.recMessagePRE) {		// Если предыдущее сообщение принято с ошибками
 				printString[1]("Уровень"); print(0xFF); printString[0]("Давление");	// Вывод заголовка
 				printString[2]("    %  "); print(0xFF); printString[0]("    атм."); // Вывод единиц измерения	
 			}
@@ -96,7 +95,7 @@ int main(void)
 			if (PINA & 1<<0) {				// Автоматический режим
 				if (data.watterLevel<30 && data.pumpStatus!=1)	com.pumpON = 1;		else com.pumpON = 0;
 				if (data.watterLevel>90 && data.pumpStatus==1)	com.pumpOFF = 1;	else com.pumpOFF = 0;
-			} else {					// Ручной режим
+			} else {						// Ручной режим
 				if (flag.manON && data.pumpStatus!=1)	com.pumpON = 1;		else com.pumpON = 0;
 				if (flag.manOFF && data.pumpStatus==1)	com.pumpOFF = 1;	else com.pumpOFF = 0;
 			}
@@ -114,7 +113,6 @@ int main(void)
 		// ...Если насос включен и давления нет, то выкл и ошибка
 		// ...Если команда на ВЫКЛ, а статус ВКЛ более 5 мин., то выкл и и ошибка
 		
-		// Подключить модуль crc16
     }
 }
 
