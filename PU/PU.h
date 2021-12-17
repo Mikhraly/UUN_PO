@@ -38,11 +38,12 @@ sData data;									// Структура принимаемых данных
 volatile sFlag flag;						// Служебные флаги
 
 
-volatile uint8_t	num = 1;				// Номер принятого/отправленного байта по UART
+//volatile uint8_t	num = 1;				// Номер принятого/отправленного байта по UART
 volatile uint8_t	tran_byte[3];			// Массив отправляемых байт. [0] - не используется
 volatile uint8_t	rec_byte[5];			// Массив принимаемых байт. [0] - не используется
 
 ISR (USART_UDRE_vect) {						// Функция передачи байта по UART через прерывание
+	static uint8_t num = 1;					// Номер отправленного байта по UART
 	UDR = tran_byte[num];					// Отправить байт
 	if (num == 3) {
 		num = 1;
@@ -59,21 +60,20 @@ ISR (USART_TXC_vect) {
 }
 
 ISR (USART_RXC_vect) {						// Функция приема байта по UART через прерывание
-	rec_byte[num] = UDR;					// Считать данные
-	if (num == 1 && rec_byte[1] != 0x7E) return;
-	if (num == 5) {
+	static uint8_t	num = 1;				// Номер принятого байта по UART
+	static uint8_t	crc8 = 0xFF;
+	
+	rec_byte[num] = UDR;										// Считать данные
+	if (num == 1 && rec_byte[1] != 0x7E) return;				// Выйти и повторить если заголовок не совпал
+	
+	if (num == 5) {							// Если принят последний байт
 		num = 1;
 		UCSRB &= ~(1<<RXCIE);				// ВЫКЛ прерывание по приему
-		// Считаем и проверяем контрольную сумму
-		uint8_t crc8 = 0xFF;
-		for (uint8_t i=1; i<=4; i++) {
-			crc8 = _crc8_ccitt_update(crc8, rec_byte[i]);
-		}
-		if(crc8 == rec_byte[5])
-				flag.recMessageOK = 1;		// Сообщение успешно принято
-		else	flag.recMessageNOK = 1;		// Сообщение принято с ошибками
+		if (crc8 == rec_byte[5])	flag.recMessageOK = 1;		// Сообщение успешно принято
+		else						flag.recMessageNOK = 1;		// Сообщение принято с ошибками
+		crc8 = 0xFF;
 	}
-	else num++;
+	else crc8 = _crc8_ccitt_update(crc8, rec_byte[num++]);		// Подсчет контрольной суммы и переход к следующему байту
 }
 
 
