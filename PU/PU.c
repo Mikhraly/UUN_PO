@@ -138,7 +138,7 @@ void ports_init() {
 
 void tran_message() {	// Формирование передаваемого сообщения
 	tran_byte[1] = 0x7E;								// Первый байт - Заголовок
-	tran_byte[2] =	com.restart<<7 | com.pumpStatus<<4 | com.pumpPressure<<3 | com.watterLevel<<2 |
+	tran_byte[2] =	com.pumpStatus<<4 | com.pumpPressure<<3 | com.watterLevel<<2 |
 					com.pumpOFF<<1 | com.pumpON<<0;		// Второй байт - Набор команд
 	// Считаем контрольную сумму
 	uint8_t crc8 = 0xFF;
