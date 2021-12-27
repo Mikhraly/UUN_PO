@@ -1,9 +1,9 @@
 .vs
 
 BK/Debug/
-BK/Release/*.*
+BK/Release/*
 !BK/Release/*.hex
 
 PU/Debug/
-PU/Release/*.*
+PU/Release/*
 !PU/Release/*.hex
