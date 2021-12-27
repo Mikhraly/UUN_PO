@@ -23,16 +23,16 @@
 #define		CS			4
 
 void timer0_init();
-void SPI_init();
+void spi_init();
 
 // Замер давления воды в кПа (10 младших бит)
-uint16_t SPI_read();
+uint16_t spiReadData();
 
 /* Возвращает атмосферы, где
  * старшая тетрада - целая часть,
  * младшая тетрада - десятая часть
  */								
-uint8_t convert_kPa_in_atm(uint16_t kPa);
+uint8_t convert_kPaToAtm(uint16_t kPa);
 
 
 #endif /* SPI_FOR_MCP3201_H_ */

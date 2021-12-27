@@ -41,8 +41,8 @@ ISR (USART_RX_vect) {										// Функция приема байта по UART через прерывание
 }
 
 void	uart_init();
-uint8_t	uart_receive_byte();
-void	uart_transmit_byte(uint8_t);
+uint8_t	uart_receiveByte();
+void	uart_transmitByte(uint8_t transmitByte);
 uint8_t waterProcent(const uint8_t distance, const uint8_t sensorHigh);
 
 
@@ -60,8 +60,8 @@ int main(void)
 	uint8_t		pumpStatus = 0;			// Переменная для хранения состояния насоса (вкл/выкл)
 	
 	uart_init();
-	SPI_init();
-	UZD_init();
+	spi_init();
+	ultrasonicModule_init();
 	
 	DDRD &= ~(1<<5);		// Вход для считывания состояния насоса вкл/выкл
 	DDRD |=  (1<<6);		// Выход команды ВКЛ
@@ -103,26 +103,26 @@ int main(void)
 				PORTB &= ~(1<<0);			// Конец импульса на выключение
 			}
 			if (rec_byte[2] & 1<<2) {								// Запрос уровня воды
-				waterLevel = waterProcent(UZD_distance(), 20);		// Замер уровня воды (в процентах)
+				waterLevel = waterProcent(ultrasonicModule_work(), 20);		// Замер уровня воды (в процентах)
 			}
 			if (rec_byte[2] & 1<<3) {								// Запрос давления
-				waterPressure = convert_kPa_in_atm(SPI_read());		// Замер давления воды (в атм. bbbb,bbbb)
+				waterPressure = convert_kPaToAtm(spiReadData());	// Замер давления воды (в атм. bbbb,bbbb)
 			}
 			if (rec_byte[2] & 1<<4) {								// Запрос статуса
 				pumpStatus = (~PIND & 1<<5)?	1 : 0;				// Считать состояние насоса
 			}
 			
 			// Отправка данных в UART
-			tran_byte[1] = 0x7E;			uart_transmit_byte(tran_byte[1]);
-			tran_byte[2] = pumpStatus<<7;	uart_transmit_byte(tran_byte[2]);
-			tran_byte[3] = waterPressure;	uart_transmit_byte(tran_byte[3]);
-			tran_byte[4] = waterLevel;		uart_transmit_byte(tran_byte[4]);
+			tran_byte[1] = 0x7E;			uart_transmitByte(tran_byte[1]);
+			tran_byte[2] = pumpStatus<<7;	uart_transmitByte(tran_byte[2]);
+			tran_byte[3] = waterPressure;	uart_transmitByte(tran_byte[3]);
+			tran_byte[4] = waterLevel;		uart_transmitByte(tran_byte[4]);
 			// Подсчет контрольной суммы
 			uint8_t crc8 = 0xFF;
 			for (uint8_t i=1; i<=4; i++) {
 				crc8 = _crc8_ccitt_update(crc8, tran_byte[i]);
 			}
-											uart_transmit_byte(tran_byte[5]);
+											uart_transmitByte(tran_byte[5]);
 			while ( !(UCSRA & (1<<TXC)) );		// Ждем завершения передачи
 			UCSRA |= 1<<TXC;					// Сбрасываем флаг завершения передачи
 			
@@ -151,14 +151,14 @@ void uart_init() {											// Функция инициализации UART
 	UBRRH = (uint8_t)(SPEED >> 8);							// Записываем в регистр скорости передачи UART константу SPEED (см. строку 14)
 }
 
-uint8_t uart_receive_byte() {								// Функция приема байта по UART
+uint8_t uart_receiveByte() {								// Функция приема байта по UART
 	while ( !(UCSRA & (1<<RXC)) );							// Ожидание прихода байта
 	return UDR;												// Возвращение принятого байта
 }
 
-void uart_transmit_byte(uint8_t byte) {						// Функция передачи байта по UART
+void uart_transmitByte(uint8_t transmitByte) {				// Функция передачи байта по UART
 	while ( !(UCSRA & (1<<UDRE)) );							// Ожидание готовности UART к передаче
-	UDR = byte;												// Запись в регистр UDR байта данных начинает процесс передачи
+	UDR = transmitByte;										// Запись в регистр UDR байта данных начинает процесс передачи
 }
 
 /* Измерение уровня воды в емкости (лежачий цилиндр с окружностью диаметром 86см)
@@ -166,27 +166,27 @@ void uart_transmit_byte(uint8_t byte) {						// Функция передачи байта по UART
  * distance - расстояние до поверхности измеренное датчиком
  * sensorHigh - высота датчика над 100%-м уровнем.
  */ 
-uint8_t waterProcent(const uint8_t distance, const uint8_t sensorHigh) {
-	if (distance<sensorHigh) return 100;
-	if (distance<sensorHigh+8) return 95;
-	if (distance<sensorHigh+13) return 90;
-	if (distance<sensorHigh+17) return 85;
-	if (distance<sensorHigh+21) return 80;
-	if (distance<sensorHigh+25) return 75;
-	if (distance<sensorHigh+29) return 70;
-	if (distance<sensorHigh+32) return 65;
-	if (distance<sensorHigh+36) return 60;
-	if (distance<sensorHigh+39) return 55;
-	if (distance<sensorHigh+43) return 50;
-	if (distance<sensorHigh+46) return 45;
-	if (distance<sensorHigh+49) return 40;
-	if (distance<sensorHigh+53) return 35;
-	if (distance<sensorHigh+56) return 30;
-	if (distance<sensorHigh+60) return 25;
-	if (distance<sensorHigh+64) return 20;
-	if (distance<sensorHigh+68) return 15;
-	if (distance<sensorHigh+72) return 10;
-	if (distance<sensorHigh+77) return 5;
-	//if (distance<sensorHigh+86) return 0;
+uint8_t waterProcent(const uint8_t distance, const uint8_t sensorHeight) {
+	if (distance < sensorHeight) return 100;
+	if (distance < sensorHeight+8) return 95;
+	if (distance < sensorHeight+13) return 90;
+	if (distance < sensorHeight+17) return 85;
+	if (distance < sensorHeight+21) return 80;
+	if (distance < sensorHeight+25) return 75;
+	if (distance < sensorHeight+29) return 70;
+	if (distance < sensorHeight+32) return 65;
+	if (distance < sensorHeight+36) return 60;
+	if (distance < sensorHeight+39) return 55;
+	if (distance < sensorHeight+43) return 50;
+	if (distance < sensorHeight+46) return 45;
+	if (distance < sensorHeight+49) return 40;
+	if (distance < sensorHeight+53) return 35;
+	if (distance < sensorHeight+56) return 30;
+	if (distance < sensorHeight+60) return 25;
+	if (distance < sensorHeight+64) return 20;
+	if (distance < sensorHeight+68) return 15;
+	if (distance < sensorHeight+72) return 10;
+	if (distance < sensorHeight+77) return 5;
+	//if (distance < sensorHeight+86) return 0;
 	return 0;
 }

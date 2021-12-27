@@ -6,14 +6,14 @@
 
 #include "UZD.h"
 
-void UZD_init()	{
+void ultrasonicModule_init()	{
 	TCCR1A = 0;
 	TCCR1B = 0b010;					// Fclk:8, 1 отсчет: 2 мкс
 	SET(DDR_UZD,trigger);			// Выход импульса, запусающего датчик приближения
 	RESET(DDR_UZD,echo);			// Вход эхо-сигнала
 }
 
-uint8_t UZD_distance() {			// Измерение максимум ДО 2 МЕТРОВ!
+uint8_t ultrasonicModule_work {		// Измерение максимум ДО 2 МЕТРОВ!
 	SET(PORT_UZD,trigger);			// Начало запускающего импульса
 	TCNT1 = 0;
 	while (TCNT1<10);				// Задержка 20 мкс

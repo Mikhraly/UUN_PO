@@ -28,8 +28,8 @@
 #define RESET(port,pin)	((port) &= ~(1<<(pin)))
 #define CHECK(port,pin)	((port) & (1<<(pin)))
 
-void		UZD_init();			// Функция инициализации датчика приближения
-uint8_t		UZD_distance();		// Функция измерения расстояния в сантиметрах. НЕ БОЛЕЕ 200 см!
+void	ultrasonicModule_init();		// Функция инициализации датчика приближения
+uint8_t	ultrasonicModule_work();		// Функция измерения расстояния в сантиметрах. НЕ БОЛЕЕ 200 см!
 
 
 #endif /* UZD_H_ */
