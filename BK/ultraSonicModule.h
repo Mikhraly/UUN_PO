@@ -22,8 +22,8 @@
 #define	DDR_USM		DDRB
 #define PORT_USM	PORTB
 #define PIN_USM		PINB
-#define trigger		4
-#define echo		3
+#define TRIGGER		4
+#define ECHO		3
 
 #define SET(port,pin)	((port) |= (1<<(pin)))
 #define RESET(port,pin)	((port) &= ~(1<<(pin)))

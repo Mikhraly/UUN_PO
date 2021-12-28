@@ -20,9 +20,9 @@ uint16_t spiReadData() {
 	PORT_SPI &= ~(1<<CS);								// CS=0
 	TCNT0 = 0;
 	
-	while (counterReceiveBits<15) {						// Первые три бита не несут информации
-		while(TCNT0<100);								// Задержка 1.6 мс
-		receiveData<<=1;								// Освобождаем младший бит для считывания очередного бита
+	while (counterReceiveBits < 15) {					// Первые три бита не несут информации
+		while(TCNT0 < 100);								// Задержка 1.6 мс
+		receiveData <<= 1;								// Освобождаем младший бит для считывания очередного бита
 		if (PIN_SPI & (1<<MISO)) receiveData |= 0x01;
 		counterReceiveBits++;
 		while (TCNT0 != 128);
