@@ -32,7 +32,7 @@ uint16_t spiReadData();
  * старшая тетрада - целая часть,
  * младшая тетрада - десятая часть
  */								
-uint8_t convert_kPaToAtm(uint16_t kPa);
+uint8_t kPaToAtm(uint16_t kPa);
 
 
 #endif /* SPI_FOR_MCP3201_H_ */

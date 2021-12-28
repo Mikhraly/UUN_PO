@@ -1,5 +1,6 @@
 /*
- * UZD.h
+ * ultraSonicModule.h
+ * Short name - USM
  * Fclk = 4MHz
  * Created: 09.03.2020 18:06:22
  * Author: Lenovo
@@ -12,15 +13,15 @@
  */ 
 
 
-#ifndef UZD_H_
-#define UZD_H_
+#ifndef USM_H_
+#define USM_H_
 
 
 #include <avr/io.h>
 
-#define	DDR_UZD		DDRB
-#define PORT_UZD	PORTB
-#define PIN_UZD		PINB
+#define	DDR_USM		DDRB
+#define PORT_USM	PORTB
+#define PIN_USM		PINB
 #define trigger		4
 #define echo		3
 
@@ -32,4 +33,4 @@ void	ultrasonicModule_init();		// Функция инициализации датчика приближения
 uint8_t	ultrasonicModule_work();		// Функция измерения расстояния в сантиметрах. НЕ БОЛЕЕ 200 см!
 
 
-#endif /* UZD_H_ */
+#endif /* USM_H_*/

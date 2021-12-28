@@ -11,7 +11,7 @@
 #include <util/delay.h>
 #include <util/crc16.h>
 #include "spi_for_MCP3201.h"
-#include "UZD.h"
+#include "ultraSonicModule.h"
 
 #define	BAUD	9600UL										// Скорость обмена по UART
 #define SPEED	(F_CPU/(BAUD*16)-1)							// Константа для записи в регистр скорости передачи UART
@@ -43,7 +43,7 @@ ISR (USART_RX_vect) {										// Функция приема байта по UART через прерывание
 void	uart_init();
 uint8_t	uart_receiveByte();
 void	uart_transmitByte(uint8_t transmitByte);
-uint8_t waterProcent(const uint8_t distance, const uint8_t sensorHigh);
+uint8_t distanceToProcent(const uint8_t distance, const uint8_t sensorHigh);
 
 
 int main(void)
@@ -103,10 +103,10 @@ int main(void)
 				PORTB &= ~(1<<0);			// Конец импульса на выключение
 			}
 			if (rec_byte[2] & 1<<2) {								// Запрос уровня воды
-				waterLevel = waterProcent(ultrasonicModule_work(), 20);		// Замер уровня воды (в процентах)
+				waterLevel = distanceToProcent(ultrasonicModule_work(), 20);		// Замер уровня воды (в процентах)
 			}
 			if (rec_byte[2] & 1<<3) {								// Запрос давления
-				waterPressure = convert_kPaToAtm(spiReadData());	// Замер давления воды (в атм. bbbb,bbbb)
+				waterPressure = kPaToAtm(spiReadData());			// Замер давления воды (в атм. bbbb,bbbb)
 			}
 			if (rec_byte[2] & 1<<4) {								// Запрос статуса
 				pumpStatus = (~PIND & 1<<5)?	1 : 0;				// Считать состояние насоса
@@ -166,7 +166,7 @@ void uart_transmitByte(uint8_t transmitByte) {				// Функция передачи байта по U
  * distance - расстояние до поверхности измеренное датчиком
  * sensorHigh - высота датчика над 100%-м уровнем.
  */ 
-uint8_t waterProcent(const uint8_t distance, const uint8_t sensorHeight) {
+uint8_t distanceToProcent(const uint8_t distance, const uint8_t sensorHeight) {
 	if (distance < sensorHeight) return 100;
 	if (distance < sensorHeight+8) return 95;
 	if (distance < sensorHeight+13) return 90;

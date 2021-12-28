@@ -39,7 +39,7 @@ uint16_t spiReadData() {
 }
 /***************************************************************************************************************************************************/
 
-uint8_t convert_kPaToAtm(uint16_t kPa) {	// преобразование кѕа в атмосферы
+uint8_t kPaToAtm(uint16_t kPa) {	// преобразование кѕа в атмосферы
 	uint8_t count = 0;
 	for (uint8_t test_kPa=5; kPa > test_kPa; test_kPa+=10, count++);
 	uint8_t high_tetrada = count / 10;
