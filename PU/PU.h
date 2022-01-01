@@ -10,32 +10,28 @@
 #define PU_H_
 
 
-typedef struct {	// Структура отправляемых команд
-	uint8_t	pumpStatus		:1;				// Запрос состояния насоса (ВКЛ или ВЫКЛ)
-	uint8_t	pumpPressure	:1;				// Запрос давления в системе подачи воды
-	uint8_t	watterLevel		:1;				// Запрос уровня воды в емкости
+struct {					// Структура отправляемых команд
 	uint8_t	pumpON			:1;				// Команда на включение насоса
 	uint8_t	pumpOFF			:1;				// Команда на выключение насоса
-} sCommand;	// Задание краткого имени
+	uint8_t	pumpStatus		:1;				// Запрос состояния насоса (ВКЛ или ВЫКЛ)
+	uint8_t	watterLevel		:1;				// Запрос уровня воды в емкости
+	uint8_t	watterPressure	:1;				// Запрос давления в системе подачи воды
+} com = {0, 1, 1, 1, 1};
 
-typedef struct {	// Структура принимаемых данных
+struct {					// Структура принимаемых данных
 	uint8_t	pumpStatus		:1;				// Состояние насоса (Вкл/Выкл)
-	uint8_t	pumpPressure;					// Давление в системе подачи воды, атм. bbbb,bbbb
 	uint8_t	watterLevel;					// Уровнь воды в емкости, см
-} sData;	// Задание краткого имени
+	uint8_t	watterPressure;					// Давление в системе подачи воды, атм. bbbb,bbbb
+} data = {0};
 
-typedef struct {	// Структура служебных флагов
+volatile struct {			// Структура служебных флагов
 	uint8_t	tranMessageOK	:1;				// Флаг завершения передачи сообщения
 	uint8_t	recMessageOK	:1;				// Флаг завершения приема сообщения
 	uint8_t	recMessageNOK	:1;				// Флаг завершения приема сообщения с ошибками
 	uint8_t recMessagePRE	:1;				// Флаг предыдущего завершения приема (1-OK, 0-NOK)
 	uint8_t manON			:1;				// Ручная команда на ВКЛ
 	uint8_t manOFF			:1;				// Ручная команда на ВЫКЛ
-} sFlag;
-
-sCommand com;								// Структура отправляемых команд
-sData data;									// Структура принимаемых данных
-volatile sFlag flag;						// Служебные флаги
+} flag = {0};
 
 
 //volatile uint8_t	num = 1;				// Номер принятого/отправленного байта по UART

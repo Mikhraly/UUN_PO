@@ -18,25 +18,7 @@
 
 
 int main(void)
-{
-	// Задание начальных команд
-	com.pumpON = 0;
-	com.pumpOFF = 1;
-	com.pumpStatus = 1;
-	com.pumpPressure = 1;
-	com.watterLevel = 1;
-	// Обнулить начальные данные
-	data.pumpStatus = 0;
-	data.pumpPressure = 0;
-	data.watterLevel = 0;
-	// Задание начальных флагов
-	flag.manON = 0;
-	flag.manOFF = 0;
-	flag.tranMessageOK = 0;
-	flag.recMessageOK = 0;
-	flag.recMessageNOK = 0;
-	flag.recMessagePRE = 0;
-	
+{	
 	ports_init();
 	HD44780_init();
     uart_init();
@@ -59,8 +41,8 @@ int main(void)
 			uint8_t level[] = {	(data.watterLevel/100) ? (data.watterLevel/100)+48 : (uint8_t)' ',
 								(data.watterLevel/10) ? ((data.watterLevel/10)%10)+48 : (uint8_t)' ',
 								(data.watterLevel%10)+48 };
-			uint8_t pressure[] = {	(data.pumpPressure>>4)+48, (uint8_t)',',
-									(data.pumpPressure & 0x0F)+48 };
+			uint8_t pressure[] = {	(data.watterPressure>>4)+48, (uint8_t)',',
+									(data.watterPressure & 0x0F)+48 };
 									
 			// Вывод данных на дисплей
 			if (!flag.recMessagePRE) {		// Если предыдущее сообщение принято с ошибками
@@ -138,7 +120,7 @@ void ports_init() {
 
 void tran_message() {	// Формирование передаваемого сообщения
 	tran_byte[1] = 0x7E;								// Первый байт - Заголовок
-	tran_byte[2] =	com.pumpStatus<<4 | com.pumpPressure<<3 | com.watterLevel<<2 |
+	tran_byte[2] =	com.pumpStatus<<4 | com.watterPressure<<3 | com.watterLevel<<2 |
 					com.pumpOFF<<1 | com.pumpON<<0;		// Второй байт - Набор команд
 	// Считаем контрольную сумму
 	uint8_t crc8 = 0xFF;
@@ -150,6 +132,6 @@ void tran_message() {	// Формирование передаваемого сообщения
 
 void rec_message() {	// Расшифровка принятого сообщения
 	data.pumpStatus = (rec_byte[2] & 1<<7)? 1 : 0;		// Состояние насоса (вкл/выкл)
-	data.pumpPressure = rec_byte[3];					// Давление насоса в атм. bbbb,bbbb
+	data.watterPressure = rec_byte[3];					// Давление насоса в атм. bbbb,bbbb
 	data.watterLevel = rec_byte[4];						// Уровень воды в см (расстояние от датчика до поверхности)
 }

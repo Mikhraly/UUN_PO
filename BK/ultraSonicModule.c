@@ -13,7 +13,7 @@ void ultrasonicModule_init()	{
 	RESET(DDR_USM,ECHO);			// Вход эхо-сигнала
 }
 
-uint8_t ultrasonicModule_work {		// Измерение максимум ДО 2 МЕТРОВ!
+uint8_t ultrasonicModule_work() {	// Измерение максимум ДО 2 МЕТРОВ!
 	SET(PORT_USM,TRIGGER);			// Начало запускающего импульса
 	TCNT1 = 0;
 	while (TCNT1<10);				// Задержка 20 мкс
