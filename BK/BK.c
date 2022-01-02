@@ -3,17 +3,17 @@
  * Fclk=4MHz
  * Created: 14.12.2019 19:32:54
  */
+
 #define	F_CPU	4000000UL									// Тактовая частота микроконтроллера
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/wdt.h>
 #include <util/crc16.h>
+#include "uart.h"
 #include "spi_for_MCP3201.h"
 #include "ultraSonicModule.h"
 
-#define	BAUD	9600UL										// Скорость обмена по UART
-#define SPEED	(F_CPU/(BAUD*16)-1)							// Константа для записи в регистр скорости передачи UART
 
 volatile uint8_t	num = 1;								// Номер принятого байта по UART
 volatile uint8_t	rec_byte[4];							// Массив принимаемых байт. [0] - не используется
@@ -39,9 +39,6 @@ ISR (USART_RX_vect) {										// Функция приема байта по UART через прерывание
 	else num++;
 }
 
-void	uart_init();
-uint8_t	uart_receiveByte();
-void	uart_transmitByte(uint8_t transmitByte);
 uint8_t distanceToProcent(const uint8_t distance, const uint8_t sensorHigh);
 
 
@@ -141,27 +138,6 @@ int main(void)
 
 
 
-
-/************************************************************************/
-/*                         Описания функций                             */
-/************************************************************************/
-
-void uart_init() {											// Функция инициализации UART
-	UCSRB = (1<<TXEN|1<<RXEN|1<<RXCIE);						// Включили передатчик и приемник, вкл прерывание по приему
-	UCSRC = (1<<UCSZ1|1<<UCSZ0);							// Формат посылки - 8 бит, 1 стоп-бит, проверки на четность нет
-	UBRRL = (uint8_t)(SPEED & 0xFF);						// Скорость задается макросом BAUD (см. строку 15)
-	UBRRH = (uint8_t)(SPEED >> 8);							// Записываем в регистр скорости передачи UART константу SPEED (см. строку 14)
-}
-
-uint8_t uart_receiveByte() {								// Функция приема байта по UART
-	while ( !(UCSRA & (1<<RXC)) );							// Ожидание прихода байта
-	return UDR;												// Возвращение принятого байта
-}
-
-void uart_transmitByte(uint8_t transmitByte) {				// Функция передачи байта по UART
-	while ( !(UCSRA & (1<<UDRE)) );							// Ожидание готовности UART к передаче
-	UDR = transmitByte;										// Запись в регистр UDR байта данных начинает процесс передачи
-}
 
 /* Измерение уровня воды в емкости (лежачий цилиндр с окружностью диаметром 86см)
  * Возвращает уровень в процентах
