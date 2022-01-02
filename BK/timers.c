@@ -18,18 +18,18 @@ void timer1_init()	{
 }
 
 
-void delay_us(uint8_t us) {
+void delay_us(uint16_t us) {
 	for (uint8_t i = 0; i < us; i++) {
 	TCNT0 = 0;	while (TCNT0 < 4);		// Одна итерация - одна микросекунда
 	}
 }
 
-void delay_ms(uint8_t ms) {
+void delay_ms(uint16_t ms) {
 	for (uint8_t i = 0; i < ms; i++) {
 	TCNT0 = 0;	while (TCNT0 < 500);	// Одна итерация - одна миллисекунда
 	}
 }
 
-void delay_s(uint8_t s) {
+void delay_s(uint16_t s) {
 	for (uint8_t i = 0; i < s; i++)	delay_ms(1000);
 }

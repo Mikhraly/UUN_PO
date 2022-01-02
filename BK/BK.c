@@ -8,7 +8,6 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/wdt.h>
-#include <util/delay.h>
 #include <util/crc16.h>
 #include "spi_for_MCP3201.h"
 #include "ultraSonicModule.h"
@@ -90,25 +89,25 @@ int main(void)
 			recMessageOK = 0;				// Сбросить флаг успешного приема
 			UCSRB &= ~(1<<RXCIE);			// Выкл прерывание UART по приему
 			PORTB |= 1<<1;					// MAX485 на передачу
-			_delay_us(200);
+			delay_us(200);
 			
 			if (rec_byte[2] & 1<<0) {		// Запрос на ВКЛ
 				PORTD |= 1<<6;				// Начало импульса на включение
 				while (PIND & 1<<5);		// Ждать включения насоса
-				_delay_ms(500);
+				delay_ms(500);
 				PORTD &= ~(1<<6);			// Конец импульса на включение
 			}
 			if (rec_byte[2] & 1<<1) {		// Запрос на ВЫКЛ
 				PORTB |= 1<<0;				// Начало импульса на выключение
 				while (~PIND & 1<<5);		// Ждать выключения насоса
-				_delay_ms(10);
+				delay_ms(10);
 				PORTB &= ~(1<<0);			// Конец импульса на выключение
 			}
 			if (rec_byte[2] & 1<<2) {								// Запрос уровня воды
 				waterLevel = distanceToProcent(ultrasonicModule_work(), 20);		// Замер уровня воды (в процентах)
 			}
 			if (rec_byte[2] & 1<<3) {								// Запрос давления
-				waterPressure = kPaToAtm(spiReadData());			// Замер давления воды (в атм. bbbb,bbbb)
+				waterPressure = kPaToAtm(spi_readData());			// Замер давления воды (в атм. bbbb,bbbb)
 			}
 			if (rec_byte[2] & 1<<4) {								// Запрос статуса
 				pumpStatus = (~PIND & 1<<5)?	1 : 0;				// Считать состояние насоса
@@ -128,9 +127,9 @@ int main(void)
 			while ( !(UCSRA & (1<<TXC)) );		// Ждем завершения передачи
 			UCSRA |= 1<<TXC;					// Сбрасываем флаг завершения передачи
 			
-			_delay_us(200);
+			delay_us(200);
 			PORTB &= ~(1<<1);			// MAX485 на прием
-			_delay_us(200);
+			delay_us(200);
 			UCSRB |= (1<<RXCIE);		// Вкл прерывание по приему
 		}
 		//////////////////////////////////////////////////////////////////////////
@@ -190,6 +189,5 @@ uint8_t distanceToProcent(const uint8_t distance, const uint8_t sensorHeight) {
 	if (distance < sensorHeight+68) return 15;
 	if (distance < sensorHeight+72) return 10;
 	if (distance < sensorHeight+77) return 5;
-	//if (distance < sensorHeight+86) return 0;
 	return 0;
 }

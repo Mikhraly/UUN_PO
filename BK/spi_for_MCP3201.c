@@ -10,24 +10,29 @@
 #include "spi_for_MCP3201.h"
 
 
-/***************************************************************************************************************************************************/
-uint16_t spiReadData() {
+/*******************************************************************************************************************************/
+void spi_init() {
+	DDR_SPI &= ~(1<<MISO);
+	DDR_SPI |= (1<<CLK)|(1<<CS);
+	PORT_SPI &= ~(1<<CLK);
+	PORT_SPI |= (1<<CS);
+}
+
+
+uint16_t spi_readData() {
 	
-	uint8_t		counterReceiveBits = 0;					// ƒл€ подсчета количества принимаемых бит SPI
-	uint16_t	receiveData = 0;						// ƒл€ хранени€ считываемых данных SPI
+	uint16_t receiveData = 0;							// ƒл€ хранени€ считываемых данных SPI
 	
 	PORT_SPI &= ~(1<<CLK);								// CLK=0
 	PORT_SPI &= ~(1<<CS);								// CS=0
-	TCNT0 = 0;
 	
-	while (counterReceiveBits < 15) {					// ѕервые три бита не несут информации
-		while(TCNT0 < 100);								// «адержка 1.6 мс
+	for (uint8_t counterBits = 0; counterBits < 15; counterBits++) {	// ѕервые три бита не несут информации
+		delay_ms(2);
 		receiveData <<= 1;								// ќсвобождаем младший бит дл€ считывани€ очередного бита
 		if (PIN_SPI & (1<<MISO)) receiveData |= 0x01;
-		counterReceiveBits++;
-		while (TCNT0 != 128);
+		delay_us(500);
 		PORT_SPI |= (1<<CLK);
-		while (TCNT0 != 0);
+		delay_ms(2);
 		PORT_SPI &= ~(1<<CLK);
 	}
 	
@@ -37,7 +42,7 @@ uint16_t spiReadData() {
 	uint16_t adc8bitsMode = (receiveData>>4) & 0xFFU;	// «начение ј÷ѕ в 8-ми битном формате
 	return ((125 * adc8bitsMode)/51 - 62);				// ¬озвращ€ет давление в кѕа (10 младших бит)
 }
-/***************************************************************************************************************************************************/
+/*******************************************************************************************************************************/
 
 uint8_t kPaToAtm(uint16_t kPa) {	// преобразование кѕа в атмосферы
 	uint8_t count = 0;
@@ -45,12 +50,4 @@ uint8_t kPaToAtm(uint16_t kPa) {	// преобразование кѕа в атмосферы
 	uint8_t high_tetrada = count / 10;
 	uint8_t low_tetrada = count % 10;
 	return (high_tetrada<<4 | low_tetrada);	
-}
-
-
-void spi_init() {
-	DDR_SPI &= ~(1<<MISO);
-	DDR_SPI |= (1<<CLK)|(1<<CS);
-	PORT_SPI &= ~(1<<CLK);
-	PORT_SPI |= (1<<CS);
 }
