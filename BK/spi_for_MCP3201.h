@@ -14,6 +14,7 @@
 
 
 #include <avr/io.h>
+#include "timers.h"
 
 #define		DDR_SPI		DDRD
 #define		PIN_SPI		PIND

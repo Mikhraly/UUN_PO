@@ -48,17 +48,9 @@ uint8_t kPaToAtm(uint16_t kPa) {	// преобразование кѕа в атмосферы
 }
 
 
-
-void timer0_init() {
-	TCNT0 = 0;
-	TCCR0A = 0;
-	TCCR0B |= 1<<CS01|1<<CS00;		// Fclk:64	(при Fclk=4ћ√ц один отсчет таймера за 16мкс)
-}
-
 void spi_init() {
 	DDR_SPI &= ~(1<<MISO);
 	DDR_SPI |= (1<<CLK)|(1<<CS);
 	PORT_SPI &= ~(1<<CLK);
 	PORT_SPI |= (1<<CS);
-	timer0_init();
 }

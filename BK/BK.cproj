@@ -130,6 +130,12 @@
     <Compile Include="spi_for_MCP3201.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="timers.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="timers.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="ultraSonicModule.c">
       <SubType>compile</SubType>
     </Compile>

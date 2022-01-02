@@ -59,6 +59,8 @@ int main(void)
 	uint8_t		waterPressure = 0;		// Переменная для хранения давления воды в кПа (максимум 10 бит)
 	uint8_t		pumpStatus = 0;			// Переменная для хранения состояния насоса (вкл/выкл)
 	
+	timer0_init();
+	timer1_init();
 	uart_init();
 	spi_init();
 	ultrasonicModule_init();
