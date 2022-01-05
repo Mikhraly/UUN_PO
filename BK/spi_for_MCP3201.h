@@ -14,9 +14,6 @@
 #define SPI_FOR_MCP3201_H_
 
 
-#include <avr/io.h>
-#include "timers.h"
-
 #define		DDR_SPI		DDRD
 #define		PIN_SPI		PIND
 #define		PORT_SPI	PORTD

@@ -10,6 +10,8 @@
 #include <avr/interrupt.h>
 #include <avr/wdt.h>
 #include <util/crc16.h>
+#include <util/delay.h>
+#include "timers.h"
 #include "uart.h"
 #include "spi_for_MCP3201.h"
 #include "ultraSonicModule.h"
@@ -40,6 +42,8 @@ ISR (USART_RX_vect) {										// Функция приема байта по UART через прерывание
 }
 
 uint8_t distanceToProcent(const uint8_t distance, const uint8_t sensorHigh);
+void pumpON();
+void pumpOFF();
 
 
 int main(void)
@@ -48,12 +52,12 @@ int main(void)
 	asm("wdr");							// Сбросить WDT (обнулить значение)
 	MCUSR &= ~(1<<WDRF);				// Сбросить флаг сброса WDT
 	WDTCR |= (1<<WDCE) | (1<<WDE);		// Вкл WDT в режиме системного сброса
-	WDTCR = (1<<WDE) | (1<<WDP3);		// Время до сброса - 4 секунды
+	WDTCR |= (1<<WDP3) | (1<<WDP0);		// Время до сброса - 8 секунд
 	
 	
-	uint8_t		waterLevel = 0;			// Переменная для хранения уровня воды в сантиметрах
-	uint8_t		waterPressure = 0;		// Переменная для хранения давления воды в кПа (максимум 10 бит)
-	uint8_t		pumpStatus = 0;			// Переменная для хранения состояния насоса (вкл/выкл)
+	uint8_t	waterLevel = 0;			// Переменная для хранения уровня воды в сантиметрах
+	uint8_t	waterPressure = 0;		// Переменная для хранения давления воды в кПа (максимум 10 бит)
+	uint8_t	pumpStatus = 0;			// Переменная для хранения состояния насоса (вкл/выкл)
 	
 	timer0_init();
 	timer1_init();
@@ -71,44 +75,31 @@ int main(void)
 	PORTB &= ~(1<<0);		// Нет команды ВЫКЛ
 	PORTB &= ~(1<<1);		// MAX485 на прием
 	
-	asm("sei");				// Вкл глобальные прерывания для работы приемника UART
+	pumpOFF();
 	
-	// Выключение насоса
-	PORTB |= 1<<0;			// Начало импульса на выключение
-	while (~PIND & 1<<5);	// Ждать выключения насоса
-	delay_ms(10);
-	PORTB &= ~(1<<0);		// Конец импульса на выключение
+	//asm("sei");				// Вкл глобальные прерывания для работы приемника UART
 	
     while (1) 
     {
 		/************************************************************************/
 		/*                    Обработка сообщения из UART                       */
 		/************************************************************************/
-		if (recMessageOK) {					// Если прием сообщения завершен успешно
+		if (recMessageOK || 1) {					// Если прием сообщения завершен успешно
 			recMessageOK = 0;				// Сбросить флаг успешного приема
 			UCSRB &= ~(1<<RXCIE);			// Выкл прерывание UART по приему
 			PORTB |= 1<<1;					// MAX485 на передачу
-			delay_us(200);
+			_delay_us(200);
 			
-			if (rec_byte[2] & 1<<0) {		// Запрос на ВКЛ
-				PORTD |= 1<<6;				// Начало импульса на включение
-				while (PIND & 1<<5);		// Ждать включения насоса
-				delay_ms(500);
-				PORTD &= ~(1<<6);			// Конец импульса на включение
-			}
-			if (rec_byte[2] & 1<<1) {		// Запрос на ВЫКЛ
-				PORTB |= 1<<0;				// Начало импульса на выключение
-				while (~PIND & 1<<5);		// Ждать выключения насоса
-				delay_ms(10);
-				PORTB &= ~(1<<0);			// Конец импульса на выключение
-			}
-			if (rec_byte[2] & 1<<2) {								// Запрос уровня воды
+			if (rec_byte[2] & 1<<0) pumpON();
+			if (rec_byte[2] & 1<<1) pumpOFF();
+				
+			if (rec_byte[2] & 1<<2 || 1) {								// Запрос уровня воды
 				waterLevel = distanceToProcent(ultrasonicModule_work(), 20);		// Замер уровня воды (в процентах)
 			}
-			if (rec_byte[2] & 1<<3) {								// Запрос давления
+			if (rec_byte[2] & 1<<3 || 1) {								// Запрос давления
 				waterPressure = kPaToAtm(spi_readData());			// Замер давления воды (в атм. bbbb,bbbb)
 			}
-			if (rec_byte[2] & 1<<4) {								// Запрос статуса
+			if (rec_byte[2] & 1<<4 || 1) {								// Запрос статуса
 				pumpStatus = (~PIND & 1<<5)?	1 : 0;				// Считать состояние насоса
 			}
 			
@@ -122,14 +113,14 @@ int main(void)
 			for (uint8_t i=1; i<=4; i++) {
 				crc8 = _crc8_ccitt_update(crc8, tran_byte[i]);
 			}
-											uart_transmitByte(tran_byte[5]);
+			tran_byte[5] = crc8;			uart_transmitByte(tran_byte[5]);
 			while ( !(UCSRA & (1<<TXC)) );		// Ждем завершения передачи
 			UCSRA |= 1<<TXC;					// Сбрасываем флаг завершения передачи
 			
-			delay_us(200);
-			PORTB &= ~(1<<1);			// MAX485 на прием
-			delay_us(200);
-			UCSRB |= (1<<RXCIE);		// Вкл прерывание по приему
+			_delay_us(200);
+			//PORTB &= ~(1<<1);			// MAX485 на прием
+			_delay_us(200);
+			//UCSRB |= (1<<RXCIE);		// Вкл прерывание по приему
 		}
 		//////////////////////////////////////////////////////////////////////////
 		
@@ -168,4 +159,18 @@ uint8_t distanceToProcent(const uint8_t distance, const uint8_t sensorHeight) {
 	if (distance < sensorHeight+72) return 10;
 	if (distance < sensorHeight+77) return 5;
 	return 0;
+}
+
+void pumpON() {
+	PORTD |= 1<<6;				// Начало импульса на включение
+	do { _delay_ms(1000);
+	} while (PIND & 1<<5);		// Повторять задержку пока не включится
+	PORTD &= ~(1<<6);			// Конец импульса на включение
+}
+
+void pumpOFF() {
+	PORTB |= 1<<0;				// Начало импульса на выключение
+	do { _delay_ms(1000);
+	} while (~PIND & 1<<5);		// Повторять задержку пока не выключится
+	PORTB &= ~(1<<0);			// Конец импульса на выключение
 }

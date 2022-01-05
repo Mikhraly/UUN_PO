@@ -7,6 +7,10 @@
  * Максимальное время выполнения ~70мс
  */ 
 
+#define	F_CPU	4000000UL
+
+#include <avr/io.h>
+#include <util/delay.h>
 #include "spi_for_MCP3201.h"
 
 
@@ -27,12 +31,12 @@ uint16_t spi_readData() {
 	PORT_SPI &= ~(1<<CS);								// CS=0
 	
 	for (uint8_t counterBits = 0; counterBits < 15; counterBits++) {	// Первые три бита не несут информации
-		delay_ms(2);
+		_delay_ms(2);
 		receiveData <<= 1;								// Освобождаем младший бит для считывания очередного бита
 		if (PIN_SPI & (1<<MISO)) receiveData |= 0x01;
-		delay_us(500);
+		_delay_us(500);
 		PORT_SPI |= (1<<CLK);
-		delay_ms(2);
+		_delay_ms(2);
 		PORT_SPI &= ~(1<<CLK);
 	}
 	

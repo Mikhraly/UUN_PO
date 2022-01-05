@@ -17,9 +17,6 @@
 #define USM_H_
 
 
-#include <avr/io.h>
-#include "timers.h"
-
 #define	DDR_USM		DDRB
 #define PORT_USM	PORTB
 #define PIN_USM		PINB
