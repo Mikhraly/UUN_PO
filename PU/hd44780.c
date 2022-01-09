@@ -5,7 +5,7 @@
  *  Author: gasra
  */ 
 
-#include "HD44780.h"
+#include "hd44780.h"
 
 void HD44780(const uint8_t mode, const uint8_t byte);
 void HD44780_convertStringRus(char string[]);

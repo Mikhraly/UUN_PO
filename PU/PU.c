@@ -12,8 +12,8 @@
 #include <util/delay.h>
 #include <string.h>
 #include <util/crc16.h>
-#include "UART.h"
-#include "HD44780.h"
+#include "uart.h"
+#include "hd44780.h"
 #include "PU.h"
 
 

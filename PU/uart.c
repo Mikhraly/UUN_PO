@@ -5,7 +5,7 @@
  *  Author: gasra
  */ 
 
-#include "UART.h"
+#include "uart.h"
 
 void uart_init() {								// Функция инициализации UART
 	UCSRB = (1<<TXEN|1<<RXEN);					// Включить передатчик и приемник
