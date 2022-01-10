@@ -17,12 +17,12 @@ void uart_init() {								// Функция инициализации UART
 	UBRRH = (uint8_t)(SPEED >> 8);				// Записываем в регистр скорости передачи UART константу SPEED (см. строку 20 UART.h)
 }
 
-uint8_t uart_receive_byte() {					// Функция приема байта по UART
+uint8_t uart_receiveByte() {					// Функция приема байта по UART
 	while ( !(UCSRA & (1<<RXC)) );				// Ожидание прихода байта
 	return UDR;									// Возвращение принятого байта
 }
 
-void uart_transmit_byte(uint8_t byte) {			// Функция передачи байта по UART
+void uart_transmitByte(uint8_t byte) {			// Функция передачи байта по UART
 	while ( !(UCSRA & (1<<UDRE)) );				// Ожидание готовности UART к передаче
 	UDR = byte;									// Запись в регистр UDR байта данных начинает процесс передачи
 }

@@ -30,15 +30,15 @@
     <EraseKey />
     <AsfFrameworkConfig>
       <framework-data>
-  <options />
-  <configurations />
-  <files />
-  <documentation help="" />
-  <offline-documentation help="" />
-  <dependencies>
-    <content-extension eid="atmel.asf" uuidref="Atmel.ASF" version="3.42.0" />
-  </dependencies>
-</framework-data>
+        <options />
+        <configurations />
+        <files />
+        <documentation help="" />
+        <offline-documentation help="" />
+        <dependencies>
+          <content-extension eid="atmel.asf" uuidref="Atmel.ASF" version="3.42.0" />
+        </dependencies>
+      </framework-data>
     </AsfFrameworkConfig>
     <avrtool>com.atmel.avrdbg.tool.simulator</avrtool>
     <avrtoolserialnumber />
@@ -138,10 +138,10 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="HD44780.c">
+    <Compile Include="hd44780.c">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="HD44780.h">
+    <Compile Include="hd44780.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="PU.c">
@@ -150,10 +150,10 @@
     <Compile Include="PU.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="UART.c">
+    <Compile Include="uart.c">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="UART.h">
+    <Compile Include="uart.h">
       <SubType>compile</SubType>
     </Compile>
   </ItemGroup>

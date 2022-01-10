@@ -7,51 +7,51 @@
 
 #include "hd44780.h"
 
-void HD44780(const uint8_t mode, const uint8_t byte);
-void HD44780_convertStringRus(char string[]);
-char HD44780_convertSymbolRus(char symbol);
+void hd44780(const uint8_t mode, const uint8_t byte);
+void hd44780_convertStringRus(char string[]);
+char hd44780_convertSymbolRus(char symbol);
 
-void HD44780_init() {
+void hd44780_init() {
 	// Настройка выводов на выход
 	DDR_HD44780 |= 1<<E | 1<<RS | 1<<HD44780_D4 | 1<<HD44780_D5 | 1<<HD44780_D6 | 1<<HD44780_D7;
 	_delay_ms(20);
 	// Инициализация согласно документации на МТ-16S2D (ф. МЭЛТ)
-	HD44780_com(0b00110000);	// Установка разрядность интерфейса
-	HD44780_com(0b00110000);	// Установка разрядность интерфейса
-	HD44780_com(0b00110000);	// Установка разрядность интерфейса
-	HD44780_com(0b00100000);	// Установка разрядность интерфейса
-	HD44780_com(0b00100000);	// Установка параметров
-	HD44780_com(0b10000000);	// Установка параметров
-	HD44780_com(0b00000000);	// Выключение дисплея
-	HD44780_com(0b10000000);	// Выключение дисплея
-	HD44780_com(0b00000000);	// Очистка дисплея
-	HD44780_com(0b00010000);	// Очистка дисплея
-	HD44780_com(0b00000000);	// Установка режима ввода данных
-	HD44780_com(0b01100000);	// Установка режима ввода данных
+	hd44780_com(0b00110000);	// Установка разрядность интерфейса
+	hd44780_com(0b00110000);	// Установка разрядность интерфейса
+	hd44780_com(0b00110000);	// Установка разрядность интерфейса
+	hd44780_com(0b00100000);	// Установка разрядность интерфейса
+	hd44780_com(0b00100000);	// Установка параметров
+	hd44780_com(0b10000000);	// Установка параметров
+	hd44780_com(0b00000000);	// Выключение дисплея
+	hd44780_com(0b10000000);	// Выключение дисплея
+	hd44780_com(0b00000000);	// Очистка дисплея
+	hd44780_com(0b00010000);	// Очистка дисплея
+	hd44780_com(0b00000000);	// Установка режима ввода данных
+	hd44780_com(0b01100000);	// Установка режима ввода данных
 	// Своя инициализация
-	HD44780_com(0b00000011);
-	HD44780_com(0b00000011);
-	HD44780_com(0b00000011);
-	HD44780_com(0b00101000);
-	HD44780_com(0b00101000);
-	HD44780_com(0b00001000);
-	HD44780_com(0b00000001); _delay_ms(10);
-	HD44780_com(0b00010000);
-	HD44780_com(0b00000110);
-	HD44780_com(0b00000010);
-	HD44780_com(0b00101000);
-	HD44780_com(0b00001100);
+	hd44780_com(0b00000011);
+	hd44780_com(0b00000011);
+	hd44780_com(0b00000011);
+	hd44780_com(0b00101000);
+	hd44780_com(0b00101000);
+	hd44780_com(0b00001000);
+	hd44780_com(0b00000001); _delay_ms(10);
+	hd44780_com(0b00010000);
+	hd44780_com(0b00000110);
+	hd44780_com(0b00000010);
+	hd44780_com(0b00101000);
+	hd44780_com(0b00001100);
 }
 
-void HD44780_init_proteus() {
+void hd44780_init_proteus() {
 	// Настройка выводов на выход
 	DDR_HD44780 |= 1<<E | 1<<RS | 1<<HD44780_D4 | 1<<HD44780_D5 | 1<<HD44780_D6 | 1<<HD44780_D7;
-	HD44780_com(0b00000010);	// Установка дисплея в начальное положение. Возврат курсора
-	HD44780_com(0b00101000);	// Параметры интерфейса: Разрядность 4 бита. 2 строки. Размер шрифта 5х7
-	HD44780_com(0b00001100);	// Включение дисплея. Запрет видимости курсора. Запрет мерцания курсора
+	hd44780_com(0b00000010);	// Установка дисплея в начальное положение. Возврат курсора
+	hd44780_com(0b00101000);	// Параметры интерфейса: Разрядность 4 бита. 2 строки. Размер шрифта 5х7
+	hd44780_com(0b00001100);	// Включение дисплея. Запрет видимости курсора. Запрет мерцания курсора
 }
 
-void HD44780(const uint8_t mode, const uint8_t byte) {
+void hd44780(const uint8_t mode, const uint8_t byte) {
 	// Установить режим команда(0)/данные(1)
 	mode ? (PORT_HD44780 |= (1<<RS))	:	(PORT_HD44780 &= ~(1<<RS));
 	// Вывод в порт старшей тетрады
@@ -75,71 +75,71 @@ void HD44780(const uint8_t mode, const uint8_t byte) {
 	_delay_ms(10);
 }
 
-void HD44780_com(const uint8_t command) {
-	HD44780(0, command);
+void hd44780_com(const uint8_t command) {
+	hd44780(0, command);
 	_delay_us(40);
 }
 
-void HD44780_adr(uint8_t adress) {
+void hd44780_adr(uint8_t adress) {
 	adress |= 1<<7;
-	HD44780(0, adress);
+	hd44780(0, adress);
 	_delay_us(40);
 }
 
 
-void HD44780_print(const uint8_t data) {
-	HD44780(1, data);
+void hd44780_print(const uint8_t data) {
+	hd44780(1, data);
 	_delay_us(40);
 }
 
-void HD44780_print_adr(const uint8_t data, uint8_t adress) {
-	HD44780_adr(adress);
-	HD44780(1, data);
+void hd44780_print_adr(const uint8_t data, uint8_t adress) {
+	hd44780_adr(adress);
+	hd44780(1, data);
 	_delay_us(40);
 }
 
 
-void HD44780_printArray(const uint8_t *array, const uint8_t size) {
-	for (uint8_t i=0; i<size; i++)	HD44780_print(*(array+i));
+void hd44780_printArray(const uint8_t *array, const uint8_t size) {
+	for (uint8_t i=0; i<size; i++)	hd44780_print(*(array+i));
 }
 
-void HD44780_printArray1(const uint8_t *array, const uint8_t size) {
-	HD44780_adr(0x00);
-	for (uint8_t i=0; i<size; i++)	HD44780_print(*(array+i));
+void hd44780_printArray1(const uint8_t *array, const uint8_t size) {
+	hd44780_adr(0x00);
+	for (uint8_t i=0; i<size; i++)	hd44780_print(*(array+i));
 }
 
-void HD44780_printArray2(const uint8_t *array, const uint8_t size) {
-	HD44780_adr(0x40);
-	for (uint8_t i=0; i<size; i++)	HD44780_print(*(array+i));
+void hd44780_printArray2(const uint8_t *array, const uint8_t size) {
+	hd44780_adr(0x40);
+	for (uint8_t i=0; i<size; i++)	hd44780_print(*(array+i));
 }
 
-void HD44780_printArray_adr(const uint8_t *array, const uint8_t size, uint8_t adress) {
-	HD44780_adr(adress);
-	for (uint8_t i=0; i<size; i++)	HD44780_print(*(array+i));
+void hd44780_printArray_adr(const uint8_t *array, const uint8_t size, uint8_t adress) {
+	hd44780_adr(adress);
+	for (uint8_t i=0; i<size; i++)	hd44780_print(*(array+i));
 }
 
 
-void HD44780_printString(char *string) {
-	HD44780_convertStringRus(string);
-	for (uint8_t i=0; string[i] != '\0'; i++)	HD44780_print(string[i]);
+void hd44780_printString(char *string) {
+	hd44780_convertStringRus(string);
+	for (uint8_t i=0; string[i] != '\0'; i++)	hd44780_print(string[i]);
 }
 
-void HD44780_printString1(char *string) {
-	HD44780_adr(0x00);
-	HD44780_printString(string);
+void hd44780_printString1(char *string) {
+	hd44780_adr(0x00);
+	hd44780_printString(string);
 }
 
-void HD44780_printString2(char *string) {
-	HD44780_adr(0x40);
-	HD44780_printString(string);
+void hd44780_printString2(char *string) {
+	hd44780_adr(0x40);
+	hd44780_printString(string);
 }
 
-void HD44780_printString_adr(char *string, uint8_t adress) {
-	HD44780_adr(adress);
-	HD44780_printString(string);
+void hd44780_printString_adr(char *string, uint8_t adress) {
+	hd44780_adr(adress);
+	hd44780_printString(string);
 }
 
-void HD44780_convertStringRus(char string[]) {
+void hd44780_convertStringRus(char string[]) {
 	for(uint8_t i=0; string[i] != '\0'; i++) {
 		switch(string[i]) {
 		case 'А':	string[i]=0x41;		break;
@@ -213,7 +213,7 @@ void HD44780_convertStringRus(char string[]) {
 	}
 }
 
-char HD44780_convertSymbolRus(char symbol) {
+char hd44780_convertSymbolRus(char symbol) {
 	switch(symbol) {
 	case 'А':	return 0x41;
 	case 'Б':	return 0xA0;

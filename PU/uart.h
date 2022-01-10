@@ -20,8 +20,8 @@
 #define SPEED	(F_CPU/(BAUD*16)-1)		//  онстанта дл€ записи в регистр скорости передачи UART
 
 void	uart_init();
-uint8_t	uart_receive_byte();
-void	uart_transmit_byte(uint8_t);
+uint8_t	uart_receiveByte();
+void	uart_transmitByte(uint8_t);
 
 
 #endif /* UART_H_ */

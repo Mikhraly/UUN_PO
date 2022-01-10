@@ -32,20 +32,20 @@
 // ВАЖНОЕ ЗАМЕЧАНИЕ: НА ВЫВОДЕ ИНДИКАТОРА RW (ЧТЕНИЕ/ЗАПИСЬ) ДОЛЖЕН БЫТЬ НИЗКИЙ УРОВЕНЬ (ЗАПИСЬ)
 
 
-void HD44780_init();												// Инициализация
-void HD44780_init_proteus();										// Инициализация для Proteus
-void HD44780_com(const uint8_t command);							// Выдача команды в дисплей
-void HD44780_adr(uint8_t adress);									// Установка адреса DDRAM. После команды должна следовать ф-ция HD44780_print()
-void HD44780_print(const uint8_t data);								// Запись символа в дисплей
-void HD44780_print_adr(const uint8_t data, uint8_t adress);			// Запись символа в дисплей с указанного адреса
-void HD44780_printArray(const uint8_t *array, const uint8_t size);		// Вывод на дисплей массива
-void HD44780_printArray1(const uint8_t *array, const uint8_t size);
-void HD44780_printArray2(const uint8_t *array, const uint8_t size);
-void HD44780_printArray_adr(const uint8_t *array, const uint8_t size, uint8_t adress);	// Вывод на дисплей массива с указанного адреса
-void HD44780_printString(char *string);								// Вывод на дисплей строки
-void HD44780_printString1(char *string);
-void HD44780_printString2(char *string);
-void HD44780_printString_adr(char *string, uint8_t adress);			// Вывод на дисплей строки с указанного адреса
+void hd44780_init();												// Инициализация
+void hd44780_init_proteus();										// Инициализация для Proteus
+void hd44780_com(const uint8_t command);							// Выдача команды в дисплей
+void hd44780_adr(uint8_t adress);									// Установка адреса DDRAM. После команды должна следовать ф-ция HD44780_print()
+void hd44780_print(const uint8_t data);								// Запись символа в дисплей
+void hd44780_print_adr(const uint8_t data, uint8_t adress);			// Запись символа в дисплей с указанного адреса
+void hd44780_printArray(const uint8_t *array, const uint8_t size);	// Вывод на дисплей массива
+void hd44780_printArray1(const uint8_t *array, const uint8_t size);
+void hd44780_printArray2(const uint8_t *array, const uint8_t size);
+void hd44780_printArray_adr(const uint8_t *array, const uint8_t size, uint8_t adress);	// Вывод на дисплей массива с указанного адреса
+void hd44780_printString(char *string);								// Вывод на дисплей строки
+void hd44780_printString1(char *string);
+void hd44780_printString2(char *string);
+void hd44780_printString_adr(char *string, uint8_t adress);			// Вывод на дисплей строки с указанного адреса
 
 
 #endif /* HD44780_H_ */

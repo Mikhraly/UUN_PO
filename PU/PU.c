@@ -5,95 +5,78 @@
  * Author : MM
  */ 
 
-#define	F_CPU	4000000UL		// Тактовая частота микроконтроллера
-
-#include <avr/io.h>
-#include <avr/interrupt.h>
-#include <util/delay.h>
-#include <string.h>
-#include <util/crc16.h>
-#include "uart.h"
-#include "hd44780.h"
 #include "PU.h"
 
 
 int main(void)
 {	
 	ports_init();
-	HD44780_init();
+	hd44780_init();
     uart_init();
-	//HD44780_init_proteus()
 	
 	printString[0]("Запрос данных...");		// Вывод начального текста на дисплей
 	
 	asm("sei");								// Разрешить глобальные прерывания
-	startInformationExchange();				// Начать информационный обмен. Отправка/прием данных
+	startInformationExchange();				// Начать информационный обмен. Отправка/прием данных (один цикл)
 	//asm("cli");							// Запретить глобальные прерывания
 	
 	
     while (1) 
     {	
-		if (flag.recMessageOK) {			// Если сообщение принято успешно - отобразить данные
-			flag.recMessageOK = 0;			// Сбросить флаг успешного приема
-			rec_message();					// Расшифровка принятого сообщения
+		if (flag.recMessageOK || flag.recMessageNOK) {
 			
-			// Обработка данных для вывода на дисплей			
-			uint8_t level[] = {	(data.watterLevel/100) ? (data.watterLevel/100)+48 : (uint8_t)' ',
-								(data.watterLevel/10) ? ((data.watterLevel/10)%10)+48 : (uint8_t)' ',
-								(data.watterLevel%10)+48 };
-			uint8_t pressure[] = {	(data.watterPressure>>4)+48, (uint8_t)',',
-									(data.watterPressure & 0x0F)+48 };
+			if (flag.recMessageOK) {
+				flag.recMessageOK = 0;
+				decryptionRecMessage();
+			
+				// Обработка данных для вывода на дисплей			
+				uint8_t level[] = {	(data.watterLevel/100) ? (data.watterLevel/100)+48 : (uint8_t)' ',
+									(data.watterLevel/10) ? ((data.watterLevel/10)%10)+48 : (uint8_t)' ',
+									(data.watterLevel%10)+48 };
+				uint8_t pressure[] = {	(data.watterPressure>>4)+48, (uint8_t)',',
+										(data.watterPressure & 0x0F)+48 };
 									
-			// Вывод данных на дисплей
-			if (!flag.recMessagePRE) {		// Если предыдущее сообщение принято с ошибками
-				printString[1]("Уровень"); print(0xFF); printString[0]("Давление");	// Вывод заголовка
-				printString[2]("    %  "); print(0xFF); printString[0]("    атм."); // Вывод единиц измерения	
+				// Вывод данных на дисплей
+				if (!flag.recMessagePRE) {		// Если предыдущее сообщение принято с ошибками
+					printString[1]("Уровень"); print(0xFF); printString[0]("Давление");	// Вывод заголовка
+					printString[2]("    %  "); print(0xFF); printString[0]("    атм."); // Вывод единиц измерения	
+				}
+				printArray_adr(level, 3, 0x41);
+				printArray_adr(pressure, 3, 0x49);
+				flag.recMessagePRE = 1;			// Информация для следующего сообщения
 			}
-			printArray_adr(level, 3, 0x41);
-			printArray_adr(pressure, 3, 0x49);
-						
+			
+			if (flag.recMessageNOK) {			// Если прием выполнен с ошибками
+				flag.recMessageNOK = 0;			// Сбросить флаг приема с ошибками
+				// Вывести на дисплей предупреждение
+				if (flag.recMessagePRE)
+				printString[1]("    ВНИМАНИЕ    ");
+				printString[2](" Неверный прием ");
+				flag.recMessagePRE = 0;			// Информация для следующего сообщения
+			}
+			
 			// Установка команд для отправки
-			if (PINA & 1<<0) {				// Автоматический режим
+			if (PINA & 1<<0) {					// Автоматический режим
 				if (data.watterLevel<30 && data.pumpStatus!=1)	com.pumpON = 1;		else com.pumpON = 0;
 				if (data.watterLevel>90 && data.pumpStatus==1)	com.pumpOFF = 1;	else com.pumpOFF = 0;
-			} else {						// Ручной режим
+			} else {							// Ручной режим
 				if (flag.manON && data.pumpStatus!=1)	com.pumpON = 1;		else com.pumpON = 0;
 				if (flag.manOFF && data.pumpStatus==1)	com.pumpOFF = 1;	else com.pumpOFF = 0;
 			}
-			tran_message();					// Сформировать сообщение на отправку
+			encryptionTranMessage();
 			startInformationExchange();
-			flag.recMessagePRE = 1;			// Информация для следующего сообщения
+			
 		}
 		
-		if (flag.recMessageNOK) {			// Если прием выполнен с ошибками
-			flag.recMessageNOK = 0;			// Сбросить флаг приема с ошибками
-			
-			// Вывести на дисплей предупреждение
-			if (flag.recMessagePRE)
-			printString[1]("    ВНИМАНИЕ    ");
-			printString[2](" Неверный прием ");
-			
-			// Установка команд для отправки
-			if (PINA & 1<<0) {				// Автоматический режим
-				if (data.watterLevel<30 && data.pumpStatus!=1)	com.pumpON = 1;		else com.pumpON = 0;
-				if (data.watterLevel>90 && data.pumpStatus==1)	com.pumpOFF = 1;	else com.pumpOFF = 0;
-			} else {						// Ручной режим
-				if (flag.manON && data.pumpStatus!=1)	com.pumpON = 1;		else com.pumpON = 0;
-				if (flag.manOFF && data.pumpStatus==1)	com.pumpOFF = 1;	else com.pumpOFF = 0;
-			}
-			tran_message();					// Сформировать сообщение на отправку
-			startInformationExchange();
-			flag.recMessagePRE = 0;			// Информация для следующего сообщения
-		}
 		
 		// !!! 1 Отладить программу так как есть (юарт, внешние прерывания и прочее)
 		// !!! 2 Реализовать ошибки ниже
 		
-		// Если сообщения принимаются с ошибками на протяжении 10 мин., то ошибка
-		// ...Если связи нет более 10 мин., то ошибка
-		// ...Если команда на ВКЛ, а статус ВЫКЛ более 5 мин., то выкл и и ошибка
-		// ...Если насос включен и давления нет, то выкл и ошибка
-		// ...Если команда на ВЫКЛ, а статус ВКЛ более 5 мин., то выкл и и ошибка
+		// Если сообщения принимаются с ошибками на протяжении 2 мин., то ошибка
+		// ...Если связи нет более 2 мин., то ошибка
+		// ...Если команда на ВКЛ, а статус ВЫКЛ более 10 сек., то выкл и и ошибка
+		// ...Если насос включен и давления нет более 30 сек., то выкл и ошибка
+		// ...Если команда на ВЫКЛ, а статус ВКЛ более 10 сек., то выкл и и ошибка
 		
     }
 }
@@ -118,7 +101,7 @@ void ports_init() {
 	GICR	|= 1<<INT0 | 1<<INT1;	// Включить внешние прерывания INT0, INT1
 }
 
-void tran_message() {	// Формирование передаваемого сообщения
+void encryptionTranMessage() {	// Формирование передаваемого сообщения
 	tran_byte[1] = 0x7E;								// Первый байт - Заголовок
 	tran_byte[2] =	com.pumpStatus<<4 | com.watterPressure<<3 | com.watterLevel<<2 |
 					com.pumpOFF<<1 | com.pumpON<<0;		// Второй байт - Набор команд
@@ -130,7 +113,7 @@ void tran_message() {	// Формирование передаваемого сообщения
 	tran_byte[3] = crc8;								// Третий байт - контрольная сумма
 }
 
-void rec_message() {	// Расшифровка принятого сообщения
+void decryptionRecMessage() {	// Расшифровка принятого сообщения
 	data.pumpStatus = (rec_byte[2] & 1<<7)? 1 : 0;		// Состояние насоса (вкл/выкл)
 	data.watterPressure = rec_byte[3];					// Давление насоса в атм. bbbb,bbbb
 	data.watterLevel = rec_byte[4];						// Уровень воды в см (расстояние от датчика до поверхности)

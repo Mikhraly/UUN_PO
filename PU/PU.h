@@ -10,6 +10,17 @@
 #define PU_H_
 
 
+#define	F_CPU	4000000UL		// Тактовая частота микроконтроллера
+
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <util/delay.h>
+#include <string.h>
+#include <util/crc16.h>
+#include "uart.h"
+#include "hd44780.h"
+
+
 struct {					// Структура отправляемых команд
 	uint8_t	pumpON			:1;				// Команда на включение насоса
 	uint8_t	pumpOFF			:1;				// Команда на выключение насоса
@@ -35,8 +46,8 @@ volatile struct {			// Структура служебных флагов
 
 
 //volatile uint8_t	num = 1;				// Номер принятого/отправленного байта по UART
-volatile uint8_t	tran_byte[3];			// Массив отправляемых байт. [0] - не используется
-volatile uint8_t	rec_byte[5];			// Массив принимаемых байт. [0] - не используется
+volatile uint8_t	tran_byte[4];			// Массив отправляемых байт. [0] - не используется
+volatile uint8_t	rec_byte[6];			// Массив принимаемых байт. [0] - не используется
 
 ISR (USART_UDRE_vect) {						// Функция передачи байта по UART через прерывание
 	static uint8_t num = 1;					// Номер отправленного байта по UART
@@ -91,15 +102,15 @@ ISR (INT1_vect) {							// Ручная команда ВЫКЛ
 }
 
 void ports_init();
-void tran_message();
-void rec_message();
+void encryptionTranMessage();
+void decryptionRecMessage();
 
-void(*print)(const uint8_t) = HD44780_print;
-void(*print_adr)(const uint8_t, uint8_t) = HD44780_print_adr;
-void(*printArray_adr)(const uint8_t*, const uint8_t, uint8_t) = HD44780_printArray_adr;
-void(*printString_adr)(char *, uint8_t) = HD44780_printString_adr;
-void(*printArray[])(const uint8_t*, const uint8_t) = { HD44780_printArray, HD44780_printArray1, HD44780_printArray2 };
-void(*printString[])(char*) = { HD44780_printString, HD44780_printString1, HD44780_printString2 };
+void(*print)(const uint8_t) = hd44780_print;
+void(*print_adr)(const uint8_t, uint8_t) = hd44780_print_adr;
+void(*printArray_adr)(const uint8_t*, const uint8_t, uint8_t) = hd44780_printArray_adr;
+void(*printString_adr)(char *, uint8_t) = hd44780_printString_adr;
+void(*printArray[])(const uint8_t*, const uint8_t) = { hd44780_printArray, hd44780_printArray1, hd44780_printArray2 };
+void(*printString[])(char*) = { hd44780_printString, hd44780_printString1, hd44780_printString2 };
 
 
 #endif /* PU_H_ */
