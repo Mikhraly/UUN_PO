@@ -17,8 +17,8 @@ int main(void)
 	printString[0]("Запрос данных...");		// Вывод начального текста на дисплей
 	
 	asm("sei");								// Разрешить глобальные прерывания
+	encryptionTranMessage();
 	startInformationExchange();				// Начать информационный обмен. Отправка/прием данных (один цикл)
-	//asm("cli");							// Запретить глобальные прерывания
 	
 	
     while (1) 
@@ -41,8 +41,8 @@ int main(void)
 					printString[1]("Уровень"); print(0xFF); printString[0]("Давление");	// Вывод заголовка
 					printString[2]("    %  "); print(0xFF); printString[0]("    атм."); // Вывод единиц измерения	
 				}
-				printArray_adr(level, 3, 0x41);
-				printArray_adr(pressure, 3, 0x49);
+				setAddress(0x41); printArray[0](level, 3);
+				setAddress(0x49); printArray[0](pressure, 3);
 				flag.recMessagePRE = 1;			// Информация для следующего сообщения
 			}
 			
@@ -55,6 +55,7 @@ int main(void)
 				flag.recMessagePRE = 0;			// Информация для следующего сообщения
 			}
 			
+			if (data.pumpStatus) PORTD |= 1<<5;	else PORTD &= ~(1<<5);
 			// Установка команд для отправки
 			if (PINA & 1<<0) {					// Автоматический режим
 				if (data.watterLevel<30 && data.pumpStatus!=1)	com.pumpON = 1;		else com.pumpON = 0;
@@ -117,4 +118,10 @@ void decryptionRecMessage() {	// Расшифровка принятого сообщения
 	data.pumpStatus = (rec_byte[2] & 1<<7)? 1 : 0;		// Состояние насоса (вкл/выкл)
 	data.watterPressure = rec_byte[3];					// Давление насоса в атм. bbbb,bbbb
 	data.watterLevel = rec_byte[4];						// Уровень воды в см (расстояние от датчика до поверхности)
+}
+
+void startInformationExchange() {
+	PORTD |= 1<<4;							// MAX485 на передачу
+	_delay_us(200);
+	UCSRB |= 1<<UDRIE;						// Включить прерывания по освобождению регистра данных (для передачи)
 }

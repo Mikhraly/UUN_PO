@@ -7,7 +7,7 @@
 
 #include "hd44780.h"
 
-void hd44780(const uint8_t mode, const uint8_t byte);
+void hd44780_work(const uint8_t mode, const uint8_t byte);
 void hd44780_convertStringRus(char string[]);
 char hd44780_convertSymbolRus(char symbol);
 
@@ -51,7 +51,7 @@ void hd44780_init_proteus() {
 	hd44780_com(0b00001100);	// Включение дисплея. Запрет видимости курсора. Запрет мерцания курсора
 }
 
-void hd44780(const uint8_t mode, const uint8_t byte) {
+void hd44780_work(const uint8_t mode, const uint8_t byte) {
 	// Установить режим команда(0)/данные(1)
 	mode ? (PORT_HD44780 |= (1<<RS))	:	(PORT_HD44780 &= ~(1<<RS));
 	// Вывод в порт старшей тетрады
@@ -76,25 +76,19 @@ void hd44780(const uint8_t mode, const uint8_t byte) {
 }
 
 void hd44780_com(const uint8_t command) {
-	hd44780(0, command);
+	hd44780_work(0, command);
 	_delay_us(40);
 }
 
-void hd44780_adr(uint8_t adress) {
+void hd44780_setAddress(uint8_t adress) {
 	adress |= 1<<7;
-	hd44780(0, adress);
+	hd44780_work(0, adress);
 	_delay_us(40);
 }
 
 
 void hd44780_print(const uint8_t data) {
-	hd44780(1, data);
-	_delay_us(40);
-}
-
-void hd44780_print_adr(const uint8_t data, uint8_t adress) {
-	hd44780_adr(adress);
-	hd44780(1, data);
+	hd44780_work(1, data);
 	_delay_us(40);
 }
 
@@ -104,17 +98,12 @@ void hd44780_printArray(const uint8_t *array, const uint8_t size) {
 }
 
 void hd44780_printArray1(const uint8_t *array, const uint8_t size) {
-	hd44780_adr(0x00);
+	hd44780_setAddress(0x00);
 	for (uint8_t i=0; i<size; i++)	hd44780_print(*(array+i));
 }
 
 void hd44780_printArray2(const uint8_t *array, const uint8_t size) {
-	hd44780_adr(0x40);
-	for (uint8_t i=0; i<size; i++)	hd44780_print(*(array+i));
-}
-
-void hd44780_printArray_adr(const uint8_t *array, const uint8_t size, uint8_t adress) {
-	hd44780_adr(adress);
+	hd44780_setAddress(0x40);
 	for (uint8_t i=0; i<size; i++)	hd44780_print(*(array+i));
 }
 
@@ -125,19 +114,15 @@ void hd44780_printString(char *string) {
 }
 
 void hd44780_printString1(char *string) {
-	hd44780_adr(0x00);
+	hd44780_setAddress(0x00);
 	hd44780_printString(string);
 }
 
 void hd44780_printString2(char *string) {
-	hd44780_adr(0x40);
+	hd44780_setAddress(0x40);
 	hd44780_printString(string);
 }
 
-void hd44780_printString_adr(char *string, uint8_t adress) {
-	hd44780_adr(adress);
-	hd44780_printString(string);
-}
 
 void hd44780_convertStringRus(char string[]) {
 	for(uint8_t i=0; string[i] != '\0'; i++) {

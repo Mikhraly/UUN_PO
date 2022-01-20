@@ -21,6 +21,9 @@
 #include "hd44780.h"
 
 
+enum displayAddress {LINE1 = 0, LINE2 = 0x40, LEVEL = 0x41, PRESSURE = 0x49};
+
+
 struct {					// Структура отправляемых команд
 	uint8_t	pumpON			:1;				// Команда на включение насоса
 	uint8_t	pumpOFF			:1;				// Команда на выключение насоса
@@ -46,11 +49,11 @@ volatile struct {			// Структура служебных флагов
 
 
 //volatile uint8_t	num = 1;				// Номер принятого/отправленного байта по UART
-volatile uint8_t	tran_byte[4];			// Массив отправляемых байт. [0] - не используется
-volatile uint8_t	rec_byte[6];			// Массив принимаемых байт. [0] - не используется
+volatile uint8_t tran_byte[4];				// Массив отправляемых байт. [0] - не используется
+volatile uint8_t rec_byte[6];				// Массив принимаемых байт. [0] - не используется
 
 ISR (USART_UDRE_vect) {						// Функция передачи байта по UART через прерывание
-	static uint8_t num = 1;					// Номер отправленного байта по UART
+	static volatile uint8_t num = 1;					// Номер отправленного байта по UART
 	UDR = tran_byte[num];					// Отправить байт
 	if (num == 3) {
 		num = 1;
@@ -84,11 +87,6 @@ ISR (USART_RXC_vect) {						// Функция приема байта по UART через прерывание
 }
 
 
-inline void startInformationExchange() {
-	PORTD |= 1<<4;							// MAX485 на передачу
-	UCSRB = 1<<UDRIE;						// Включить прерывания по освобождению регистра данных (для передачи)
-}
-
 ISR (INT0_vect) {							// Ручная команда ВКЛ
 	flag.manON = 1;
 	flag.manOFF = 0;
@@ -101,14 +99,14 @@ ISR (INT1_vect) {							// Ручная команда ВЫКЛ
 	_delay_us(200);							// Защита от дребезга контактов
 }
 
+
 void ports_init();
 void encryptionTranMessage();
 void decryptionRecMessage();
+void startInformationExchange();
 
 void(*print)(const uint8_t) = hd44780_print;
-void(*print_adr)(const uint8_t, uint8_t) = hd44780_print_adr;
-void(*printArray_adr)(const uint8_t*, const uint8_t, uint8_t) = hd44780_printArray_adr;
-void(*printString_adr)(char *, uint8_t) = hd44780_printString_adr;
+void(*setAddress)(uint8_t) = hd44780_setAddress;
 void(*printArray[])(const uint8_t*, const uint8_t) = { hd44780_printArray, hd44780_printArray1, hd44780_printArray2 };
 void(*printString[])(char*) = { hd44780_printString, hd44780_printString1, hd44780_printString2 };
 
