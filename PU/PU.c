@@ -23,6 +23,11 @@ int main(void)
 	
     while (1) 
     {	
+		/*flag.mode = (PINA & 1<<0)? AUTO : MANUAL;
+		if (flag.mode == AUTO) GICR &= ~(1<<INT0) & ~(1<<INT1);
+		else GICR |= 1<<INT0 | 1<<INT1;*/
+		
+		
 		if (flag.recMessageOK || flag.recMessageNOK) {
 			
 			if (flag.recMessageOK) {
@@ -55,12 +60,13 @@ int main(void)
 				flag.recMessagePRE = 0;			// Информация для следующего сообщения
 			}
 			
+			
 			if (data.pumpStatus) PORTD |= 1<<5;	else PORTD &= ~(1<<5);
 			// Установка команд для отправки
-			if (PINA & 1<<0) {					// Автоматический режим
+			if (PINA & 1<<0) {
 				if (data.watterLevel<30 && data.pumpStatus!=1)	com.pumpON = 1;		else com.pumpON = 0;
 				if (data.watterLevel>90 && data.pumpStatus==1)	com.pumpOFF = 1;	else com.pumpOFF = 0;
-			} else {							// Ручной режим
+			} else {				
 				if (flag.manON && data.pumpStatus!=1)	com.pumpON = 1;		else com.pumpON = 0;
 				if (flag.manOFF && data.pumpStatus==1)	com.pumpOFF = 1;	else com.pumpOFF = 0;
 			}
@@ -98,7 +104,7 @@ void ports_init() {
 	PORTC	= 0b11111111;
 	DDRD	= 0b11110000;
 	PORTD	= 0b00011111;
-	//MCUSR	= 0b00001010;			// Режим работы внешних прерываний INT0, INT1 по заднему фронту	
+	MCUCR	= 0b00001010;			// Режим работы внешних прерываний INT0, INT1 по заднему фронту	
 	GICR	|= 1<<INT0 | 1<<INT1;	// Включить внешние прерывания INT0, INT1
 }
 

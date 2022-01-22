@@ -37,7 +37,9 @@ struct {					// Структура принимаемых данных
 	uint8_t	watterLevel;					// Уровнь воды в емкости, см
 	uint8_t	watterPressure;					// Давление в системе подачи воды, атм. bbbb,bbbb
 } data = {0};
-
+	
+//enum modes {AUTO, MANUAL};
+	
 volatile struct {			// Структура служебных флагов
 	uint8_t	tranMessageOK	:1;				// Флаг завершения передачи сообщения
 	uint8_t	recMessageOK	:1;				// Флаг завершения приема сообщения
@@ -45,58 +47,68 @@ volatile struct {			// Структура служебных флагов
 	uint8_t recMessagePRE	:1;				// Флаг предыдущего завершения приема (1-OK, 0-NOK)
 	uint8_t manON			:1;				// Ручная команда на ВКЛ
 	uint8_t manOFF			:1;				// Ручная команда на ВЫКЛ
+	//enum modes mode			:1;				// Режим работы
 } flag = {0};
 
 
-//volatile uint8_t	num = 1;				// Номер принятого/отправленного байта по UART
 volatile uint8_t tran_byte[4];				// Массив отправляемых байт. [0] - не используется
 volatile uint8_t rec_byte[6];				// Массив принимаемых байт. [0] - не используется
 
 ISR (USART_UDRE_vect) {						// Функция передачи байта по UART через прерывание
-	static volatile uint8_t num = 1;					// Номер отправленного байта по UART
-	UDR = tran_byte[num];					// Отправить байт
-	if (num == 3) {
-		num = 1;
+	static volatile uint8_t counter = 1;
+	UDR = tran_byte[counter];				// Отправить байт
+	if (counter == 3) {
+		counter = 1;
 		UCSRB &= ~(1<<UDRIE);				// ВЫКЛ прерывание по освобождению регистра данных
 		UCSRB |= 1<<TXCIE;					// ВКЛ прерывание по завершению передачи
-	}	else num++;
+	}	else counter++;
 }
 
 ISR (USART_TXC_vect) {
-	flag.tranMessageOK = 1;					// Сообщение успешно отправлено
+	flag.tranMessageOK = 1;
 	UCSRB &= ~(1<<TXCIE);					// ВЫКЛ прерывание по завершению передачи
 	PORTD &= ~(1<<4);						// MAX485 на прием
 	UCSRB |= 1<<RXCIE;						// ВКЛ прерывание по завершению приема
 }
 
 ISR (USART_RXC_vect) {						// Функция приема байта по UART через прерывание
-	static uint8_t	num = 1;				// Номер принятого байта по UART
+	static volatile uint8_t	counter = 1;
 	static uint8_t	crc8 = 0xFF;
 	
-	rec_byte[num] = UDR;										// Считать данные
-	if (num == 1 && rec_byte[1] != 0x7E) return;				// Выйти и повторить если заголовок не совпал
+	rec_byte[counter] = UDR;				// Считать байт
+	if (counter == 1 && rec_byte[1] != 0x7E) return;
 	
-	if (num == 5) {							// Если принят последний байт
-		num = 1;
+	if (counter == 5) {
+		counter = 1;
 		UCSRB &= ~(1<<RXCIE);				// ВЫКЛ прерывание по приему
-		if (crc8 == rec_byte[5])	flag.recMessageOK = 1;		// Сообщение успешно принято
-		else						flag.recMessageNOK = 1;		// Сообщение принято с ошибками
+		if (crc8 == rec_byte[5])	flag.recMessageOK = 1;
+		else						flag.recMessageNOK = 1;
 		crc8 = 0xFF;
 	}
-	else crc8 = _crc8_ccitt_update(crc8, rec_byte[num++]);		// Подсчет контрольной суммы и переход к следующему байту
+	else crc8 = _crc8_ccitt_update(crc8, rec_byte[counter++]);
 }
 
 
 ISR (INT0_vect) {							// Ручная команда ВКЛ
-	flag.manON = 1;
-	flag.manOFF = 0;
-	_delay_us(200);							// Защита от дребезга контактов
+	/*if (PINA & 1<<0) {						// Если автоматический режим
+		flag.manON = 0;
+		flag.manOFF = 0;
+	} else {*/
+		flag.manON = 1;
+		flag.manOFF = 0;
+		_delay_us(200);						// Защита от дребезга контактов
+	//}
 }
 
 ISR (INT1_vect) {							// Ручная команда ВЫКЛ
-	flag.manON = 0;
-	flag.manOFF = 1;
-	_delay_us(200);							// Защита от дребезга контактов
+	/*if (PINA & 1<<0) {						// Если автоматический режим
+		flag.manON = 0;
+		flag.manOFF = 0;
+	} else {*/
+		flag.manON = 0;
+		flag.manOFF = 1;
+		_delay_us(200);						// Защита от дребезга контактов
+	//}
 }
 
 
