@@ -23,10 +23,6 @@ int main(void)
 	
     while (1) 
     {	
-		/*flag.mode = (PINA & 1<<0)? AUTO : MANUAL;
-		if (flag.mode == AUTO) GICR &= ~(1<<INT0) & ~(1<<INT1);
-		else GICR |= 1<<INT0 | 1<<INT1;*/
-		
 		
 		if (flag.recMessageOK || flag.recMessageNOK) {
 			
@@ -63,10 +59,10 @@ int main(void)
 			
 			if (data.pumpStatus) PORTD |= 1<<5;	else PORTD &= ~(1<<5);
 			// Установка команд для отправки
-			if (PINA & 1<<0) {
+			if (PINA & 1<<0) {		// Автоматический режим
 				if (data.watterLevel<30 && data.pumpStatus!=1)	com.pumpON = 1;		else com.pumpON = 0;
 				if (data.watterLevel>90 && data.pumpStatus==1)	com.pumpOFF = 1;	else com.pumpOFF = 0;
-			} else {				
+			} else {				// Ручной режим
 				if (flag.manON && data.pumpStatus!=1)	com.pumpON = 1;		else com.pumpON = 0;
 				if (flag.manOFF && data.pumpStatus==1)	com.pumpOFF = 1;	else com.pumpOFF = 0;
 			}
@@ -76,14 +72,12 @@ int main(void)
 		}
 		
 		
-		// !!! 1 Отладить программу так как есть (юарт, внешние прерывания и прочее)
-		// !!! 2 Реализовать ошибки ниже
 		
-		// Если сообщения принимаются с ошибками на протяжении 2 мин., то ошибка
-		// ...Если связи нет более 2 мин., то ошибка
-		// ...Если команда на ВКЛ, а статус ВЫКЛ более 10 сек., то выкл и и ошибка
-		// ...Если насос включен и давления нет более 30 сек., то выкл и ошибка
-		// ...Если команда на ВЫКЛ, а статус ВКЛ более 10 сек., то выкл и и ошибка
+		// TODO Если связи нет более 2 мин., то ошибка
+		// TODO Если сообщения принимаются с ошибками на протяжении 2 мин., то ошибка
+		// TODO Если команда на ВКЛ, а статус ВЫКЛ более 10 сек., то выкл и и ошибка
+		// TODO Если насос включен и давления нет более 30 сек., то выкл и ошибка
+		// TODO Если команда на ВЫКЛ, а статус ВКЛ более 10 сек., то выкл и и ошибка
 		
     }
 }

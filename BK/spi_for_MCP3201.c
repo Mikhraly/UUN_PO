@@ -44,13 +44,15 @@ uint16_t spi_readData() {
 	PORT_SPI |= (1<<CS);								// CS=1
 	receiveData = receiveData & 0xFFFU;					// «начение ј÷ѕ (12 младших бит)
 	uint16_t adc8bitsMode = (receiveData>>4) & 0xFFU;	// «начение ј÷ѕ в 8-ми битном формате
+	if ( ((125 * adc8bitsMode)/51) > 61 ) 
 	return ((125 * adc8bitsMode)/51 - 62);				// ¬озвращ€ет давление в кѕа (10 младших бит)
+	else return 0;
 }
 /*******************************************************************************************************************************/
 
 uint8_t kPaToAtm(uint16_t kPa) {	// преобразование кѕа в атмосферы
 	uint8_t count = 0;
-	for (uint8_t test_kPa=5; kPa > test_kPa; test_kPa+=10, count++);
+	for (uint16_t test_kPa=5; kPa > test_kPa; test_kPa+=10, count++);
 	uint8_t high_tetrada = count / 10;
 	uint8_t low_tetrada = count % 10;
 	return (high_tetrada<<4 | low_tetrada);	
