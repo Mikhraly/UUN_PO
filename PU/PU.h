@@ -47,7 +47,8 @@ volatile struct {			// Структура служебных флагов
 	uint8_t manON			:1;				// Ручная команда на ВКЛ
 	uint8_t manOFF			:1;				// Ручная команда на ВЫКЛ
 	uint8_t myError			:1;
-} flag = {0, 0, 0, 0, 0, 0, 1};
+	uint8_t lowWaterLevel	:1;
+} flag = {0, 0, 0, 0, 0, 0, 1, 0};
 
 volatile struct {
 	uint8_t notOn;
@@ -98,38 +99,46 @@ ISR (USART_RXC_vect) {						// Функция приема байта по UART через прерывание
 
 
 ISR (INT0_vect) {							// Ручная команда ВКЛ
-	/*if (PINA & 1<<0) {						// Если автоматический режим
+	if (PINA & 1<<0) {						// Если автоматический режим
 		flag.manON = 0;
 		flag.manOFF = 0;
-	} else {*/
+	} else {
 		flag.manON = 1;
 		flag.manOFF = 0;
 		_delay_us(200);						// Защита от дребезга контактов
-	//}
+	}
 }
 
 ISR (INT1_vect) {							// Ручная команда ВЫКЛ
-	/*if (PINA & 1<<0) {						// Если автоматический режим
+	if (PINA & 1<<0) {						// Если автоматический режим
 		flag.manON = 0;
 		flag.manOFF = 0;
-	} else {*/
+	} else {
 		flag.manON = 0;
 		flag.manOFF = 1;
 		_delay_us(200);						// Защита от дребезга контактов
-	//}
+	}
 }
 
 
 ISR (TIMER1_COMPA_vect) {
 	TCNT1 = 0;
-	
 	myCounters.notOn = (com.pumpON && !data.pumpStatus) ? myCounters.notOn+1 : 0;
 	myCounters.notOff = (com.pumpOFF && data.pumpStatus) ? myCounters.notOff+1 : 0;
 	myCounters.notPress = (data.pumpStatus && data.watterPressure < 0x20) ? myCounters.notPress+1 : 0;
 	myCounters.press = (!data.pumpStatus && data.watterPressure > 0x19) ? myCounters.press+1 : 0;
-	
 	myCounters.messageNOK = (!flag.recMessagePRE) ? myCounters.messageNOK+1 : 0;
 	myCounters.connectionNOK++;
+}
+
+ISR (TIMER1_COMPB_vect) {
+	if (OCR1B == 7812) {
+		PORTD |= 1<<6;
+		OCR1B = 1;
+	} else {
+		PORTD &= ~(1<<6);
+		OCR1B = 7812;
+	}
 }
 
 

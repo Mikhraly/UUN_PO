@@ -57,11 +57,15 @@ int main(void)
 			
 			// Установка команд для отправки
 			if (PINA & 1<<0) {		// Автоматический режим
-				if (data.watterLevel<30 && data.pumpStatus!=1)	com.pumpON = 1;		else com.pumpON = 0;
-				if (data.watterLevel>90 && data.pumpStatus==1)	com.pumpOFF = 1;	else com.pumpOFF = 0;
+				if (data.watterLevel<25 && data.pumpStatus!=1) com.pumpON = 1; else com.pumpON = 0;
+				if (data.watterLevel>95 && data.pumpStatus==1) com.pumpOFF = 1; else com.pumpOFF = 0;
 			} else {				// Ручной режим
-				if (flag.manON && data.pumpStatus!=1)	com.pumpON = 1;		else com.pumpON = 0;
-				if (flag.manOFF && data.pumpStatus==1)	com.pumpOFF = 1;	else com.pumpOFF = 0;
+				if (data.watterLevel == 100) {
+					flag.manON = 0;
+					flag.manOFF = 1;
+				}
+				if (flag.manON && !data.pumpStatus) com.pumpON = 1; else com.pumpON = 0;
+				if (flag.manOFF && data.pumpStatus) com.pumpOFF = 1; else com.pumpOFF = 0;
 			}
 			encryptionTranMessage();
 			startInformationExchange();
@@ -70,8 +74,18 @@ int main(void)
 		
 		
 		if (data.pumpStatus) PORTD |= 1<<5;	else PORTD &= ~(1<<5);
-		if ( (data.pumpStatus && data.watterPressure < 0x20) || (!data.pumpStatus && data.watterPressure > 0x19) )
-			PORTD |= 1<<6; else PORTD &= ~(1<<6);
+		
+		if ( (data.pumpStatus && data.watterPressure < 0x20) || (!data.pumpStatus && data.watterPressure > 0x19) ) {
+			TIMSK &= ~(1<<OCIE1B);
+			PORTD |= 1<<6;
+		} else {
+			if ((data.watterLevel < 25) && (!data.pumpStatus))
+				TIMSK |= 1<<OCIE1B;
+			else {
+				TIMSK &= ~(1<<OCIE1B);
+				PORTD &= ~(1<<6);
+			}
+		}
 		
 		
 		if (myCounters.notOn > 5) myError(0x01);
