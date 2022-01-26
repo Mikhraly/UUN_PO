@@ -19,6 +19,7 @@
 #include <util/crc16.h>
 #include "uart.h"
 #include "hd44780.h"
+#include "timers.h"
 
 
 enum displayAddress {LINE1 = 0, LINE2 = 0x40, LEVEL = 0x41, PRESSURE = 0x49};
@@ -32,13 +33,11 @@ struct {					// Структура отправляемых команд
 	uint8_t	watterPressure	:1;				// Запрос давления в системе подачи воды
 } com = {0, 1, 1, 1, 1};
 
-struct {					// Структура принимаемых данных
+volatile struct {			// Структура принимаемых данных
 	uint8_t	pumpStatus		:1;				// Состояние насоса (Вкл/Выкл)
 	uint8_t	watterLevel;					// Уровнь воды в емкости, см
 	uint8_t	watterPressure;					// Давление в системе подачи воды, атм. bbbb,bbbb
 } data = {0};
-	
-//enum modes {AUTO, MANUAL};
 	
 volatile struct {			// Структура служебных флагов
 	uint8_t	tranMessageOK	:1;				// Флаг завершения передачи сообщения
@@ -47,12 +46,21 @@ volatile struct {			// Структура служебных флагов
 	uint8_t recMessagePRE	:1;				// Флаг предыдущего завершения приема (1-OK, 0-NOK)
 	uint8_t manON			:1;				// Ручная команда на ВКЛ
 	uint8_t manOFF			:1;				// Ручная команда на ВЫКЛ
-	//enum modes mode			:1;				// Режим работы
-} flag = {0};
+	uint8_t myError			:1;
+} flag = {0, 0, 0, 0, 0, 0, 1};
 
+volatile struct {
+	uint8_t notOn;
+	uint8_t notOff;
+	uint8_t notPress;
+	uint8_t press;
+	uint8_t messageNOK;
+	uint8_t connectionNOK;
+} myCounters = {0};
 
 volatile uint8_t tran_byte[4];				// Массив отправляемых байт. [0] - не используется
 volatile uint8_t rec_byte[6];				// Массив принимаемых байт. [0] - не используется
+
 
 ISR (USART_UDRE_vect) {						// Функция передачи байта по UART через прерывание
 	static volatile uint8_t counter = 1;
@@ -112,10 +120,25 @@ ISR (INT1_vect) {							// Ручная команда ВЫКЛ
 }
 
 
+ISR (TIMER1_COMPA_vect) {
+	TCNT1 = 0;
+	
+	myCounters.notOn = (com.pumpON && !data.pumpStatus) ? myCounters.notOn+1 : 0;
+	myCounters.notOff = (com.pumpOFF && data.pumpStatus) ? myCounters.notOff+1 : 0;
+	myCounters.notPress = (data.pumpStatus && data.watterPressure < 0x20) ? myCounters.notPress+1 : 0;
+	myCounters.press = (!data.pumpStatus && data.watterPressure > 0x19) ? myCounters.press+1 : 0;
+	
+	myCounters.messageNOK = (!flag.recMessagePRE) ? myCounters.messageNOK+1 : 0;
+	myCounters.connectionNOK++;
+}
+
+
 void ports_init();
 void encryptionTranMessage();
 void decryptionRecMessage();
 void startInformationExchange();
+void myError(uint8_t errorCode);
+void printErrorCode(uint8_t errorCode);
 
 void(*print)(const uint8_t) = hd44780_print;
 void(*setAddress)(uint8_t) = hd44780_setAddress;

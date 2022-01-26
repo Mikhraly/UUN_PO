@@ -13,8 +13,9 @@ int main(void)
 	ports_init();
 	hd44780_init();
     uart_init();
+	timer1_init();
 	
-	printString[0]("Запрос данных...");		// Вывод начального текста на дисплей
+	printString[1]("Запрос данных...");		// Вывод начального текста на дисплей
 	
 	asm("sei");								// Разрешить глобальные прерывания
 	encryptionTranMessage();
@@ -25,6 +26,7 @@ int main(void)
     {	
 		
 		if (flag.recMessageOK || flag.recMessageNOK) {
+			myCounters.connectionNOK = 0;
 			
 			if (flag.recMessageOK) {
 				flag.recMessageOK = 0;
@@ -38,26 +40,21 @@ int main(void)
 										(data.watterPressure & 0x0F)+48 };
 									
 				// Вывод данных на дисплей
-				if (!flag.recMessagePRE) {		// Если предыдущее сообщение принято с ошибками
-					printString[1]("Уровень"); print(0xFF); printString[0]("Давление");	// Вывод заголовка
-					printString[2]("    %  "); print(0xFF); printString[0]("    атм."); // Вывод единиц измерения	
+				if (flag.myError) {
+					flag.myError = 0;
+					printString[1]("Уровень"); print(0xA0); printString[0]("Давление");	// Вывод заголовка
+					printString[2]("    %  "); print(0xA0); printString[0]("    атм."); // Вывод единиц измерения	
 				}
 				setAddress(0x41); printArray[0](level, 3);
 				setAddress(0x49); printArray[0](pressure, 3);
-				flag.recMessagePRE = 1;			// Информация для следующего сообщения
+				flag.recMessagePRE = 1;
 			}
 			
 			if (flag.recMessageNOK) {			// Если прием выполнен с ошибками
 				flag.recMessageNOK = 0;			// Сбросить флаг приема с ошибками
-				// Вывести на дисплей предупреждение
-				if (flag.recMessagePRE)
-				printString[1]("    ВНИМАНИЕ    ");
-				printString[2](" Неверный прием ");
-				flag.recMessagePRE = 0;			// Информация для следующего сообщения
+				flag.recMessagePRE = 0;
 			}
 			
-			
-			if (data.pumpStatus) PORTD |= 1<<5;	else PORTD &= ~(1<<5);
 			// Установка команд для отправки
 			if (PINA & 1<<0) {		// Автоматический режим
 				if (data.watterLevel<30 && data.pumpStatus!=1)	com.pumpON = 1;		else com.pumpON = 0;
@@ -72,13 +69,18 @@ int main(void)
 		}
 		
 		
+		if (data.pumpStatus) PORTD |= 1<<5;	else PORTD &= ~(1<<5);
+		if ( (data.pumpStatus && data.watterPressure < 0x20) || (!data.pumpStatus && data.watterPressure > 0x19) )
+			PORTD |= 1<<6; else PORTD &= ~(1<<6);
 		
-		// TODO Если связи нет более 2 мин., то ошибка
-		// TODO Если сообщения принимаются с ошибками на протяжении 2 мин., то ошибка
-		// TODO Если команда на ВКЛ, а статус ВЫКЛ более 10 сек., то выкл и и ошибка
-		// TODO Если насос включен и давления нет более 30 сек., то выкл и ошибка
-		// TODO Если команда на ВЫКЛ, а статус ВКЛ более 10 сек., то выкл и и ошибка
 		
+		if (myCounters.notOn > 5) myError(0x01);
+		if (myCounters.notPress > 5) myError(0x02);
+		if (myCounters.notOff > 5) myError(0x03);
+		if (myCounters.press > 5) myError(0x04);
+		if (myCounters.messageNOK > 5) myError(0x05);
+		if (myCounters.connectionNOK > 10) myError(0x06);
+
     }
 }
 
@@ -124,4 +126,75 @@ void startInformationExchange() {
 	PORTD |= 1<<4;							// MAX485 на передачу
 	_delay_us(200);
 	UCSRB |= 1<<UDRIE;						// Включить прерывания по освобождению регистра данных (для передачи)
+}
+
+void myError(uint8_t errorCode) {
+	PORTD |= 1<<7;
+	printErrorCode(errorCode);
+	
+	if (errorCode != 0x06) {
+		com.pumpOFF = 1;
+		while (!flag.recMessageOK && !flag.recMessageNOK);
+		flag.recMessageOK = 0; flag.recMessageNOK = 0;
+		encryptionTranMessage();
+		startInformationExchange();
+		while (!flag.recMessageOK && !flag.recMessageNOK);
+		if (flag.recMessageOK) {
+			flag.recMessageOK = 0;
+			flag.recMessagePRE = 1;
+			decryptionRecMessage();
+			if (data.pumpStatus) PORTD |= 1<<5;	else PORTD &= ~(1<<5);
+			if ( (data.pumpStatus && data.watterPressure < 0x20) || (!data.pumpStatus && data.watterPressure > 0x19) )
+				PORTD |= 1<<6; else PORTD &= ~(1<<6);
+		}
+		com.pumpOFF = 0;
+	}
+	
+	while (PINC & 1<<0);
+	PORTD &= ~(1<<7);
+	myCounters.notOn = 0;
+	myCounters.notPress = 0;
+	myCounters.notOff = 0;
+	myCounters.press = 0;
+	myCounters.messageNOK = 0;
+	myCounters.connectionNOK = 0;
+	flag.recMessageNOK = 0;
+	flag.manON = 0;
+	flag.manOFF = 0;
+	flag.myError = 1;
+	encryptionTranMessage();
+	startInformationExchange();
+}
+
+void printErrorCode(uint8_t errorCode) {
+	switch (errorCode) {
+	case 0x01:
+		printString[1]("  Ошибка #0x01  ");
+		printString[2]("Включение насоса");
+		break;
+	case 0x02:
+		printString[1]("  Ошибка #0x02  ");
+		printString[2]("Низкое давление ");
+		break;
+	case 0x03:
+		printString[1]("  Ошибка #0x03  ");
+		printString[2]("Выключение насос");
+		break;
+	case 0x04:
+		printString[1]("  Ошибка #0x04  ");
+		printString[2]("Высокое давление");
+		break;
+	case 0x05:
+		printString[1]("  Ошибка #0x05  ");
+		printString[2]("Прием с ошибками");
+		break;
+	case 0x06:
+		printString[1]("  Ошибка #0x06  ");
+		printString[2]("   Связи нет!   ");
+		break;
+	default:
+		printString[1]("  Ошибка #0xFF  ");
+		printString[2]("Неизвест. ошибка");
+		break;
+	}
 }

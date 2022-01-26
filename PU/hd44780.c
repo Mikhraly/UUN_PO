@@ -1,6 +1,6 @@
 /*
  * HD44780.c
- *
+ * ЖК-модуль MT-16S2D ф. МЭЛТ
  * Created: 06.02.2021 21:54:35
  *  Author: gasra
  */ 
@@ -16,31 +16,34 @@ void hd44780_init() {
 	DDR_HD44780 |= 1<<E | 1<<RS | 1<<HD44780_D4 | 1<<HD44780_D5 | 1<<HD44780_D6 | 1<<HD44780_D7;
 	_delay_ms(20);
 	// Инициализация согласно документации на МТ-16S2D (ф. МЭЛТ)
-	hd44780_com(0b00110000);	// Установка разрядность интерфейса
-	hd44780_com(0b00110000);	// Установка разрядность интерфейса
-	hd44780_com(0b00110000);	// Установка разрядность интерфейса
-	hd44780_com(0b00100000);	// Установка разрядность интерфейса
-	hd44780_com(0b00100000);	// Установка параметров
+	/*
+	hd44780_com(0b00111010);	// Установка разрядность интерфейса
+	hd44780_com(0b00111010);	// Установка разрядность интерфейса
+	hd44780_com(0b00111010);	// Установка разрядность интерфейса
+	hd44780_com(0b00101010);	// Установка разрядность интерфейса
+	hd44780_com(0b00101010);	// Установка параметров
 	hd44780_com(0b10000000);	// Установка параметров
 	hd44780_com(0b00000000);	// Выключение дисплея
 	hd44780_com(0b10000000);	// Выключение дисплея
 	hd44780_com(0b00000000);	// Очистка дисплея
-	hd44780_com(0b00010000);	// Очистка дисплея
+	hd44780_com(0b00010100);	// Очистка дисплея
 	hd44780_com(0b00000000);	// Установка режима ввода данных
 	hd44780_com(0b01100000);	// Установка режима ввода данных
+	*/
 	// Своя инициализация
-	hd44780_com(0b00000011);
-	hd44780_com(0b00000011);
-	hd44780_com(0b00000011);
-	hd44780_com(0b00101000);
-	hd44780_com(0b00101000);
-	hd44780_com(0b00001000);
-	hd44780_com(0b00000001); _delay_ms(10);
-	hd44780_com(0b00010000);
-	hd44780_com(0b00000110);
-	hd44780_com(0b00000010);
-	hd44780_com(0b00101000);
-	hd44780_com(0b00001100);
+	_delay_ms(40);
+	hd44780_work(0, 0b00000011); _delay_ms(6);
+	hd44780_work(0, 0b00000011); _delay_ms(6);
+	hd44780_work(0, 0b00000011); _delay_ms(6);
+	hd44780_work(0, 0b00101010); _delay_ms(6); // разрядность 4 бита, страница 1
+	hd44780_work(0, 0b00101010); _delay_ms(6); // разрядность 4 бита, страница 1
+	hd44780_work(0, 0b00001000); _delay_ms(6);
+	hd44780_work(0, 0b00000001); _delay_ms(6);
+	hd44780_work(0, 0b00010000); _delay_ms(6);
+	hd44780_work(0, 0b00000110); _delay_ms(6);
+	hd44780_work(0, 0b00000010); _delay_ms(6);
+	hd44780_work(0, 0b00101010); _delay_ms(6); // разрядность 4 бита, страница 1
+	hd44780_work(0, 0b00001100); _delay_ms(6);
 }
 
 void hd44780_init_proteus() {
@@ -108,9 +111,14 @@ void hd44780_printArray2(const uint8_t *array, const uint8_t size) {
 }
 
 
+/* Работает некорректно со страницей 0. Первая печать проходит успешно. При повторном выводе той же строки некоторые символы
+ * подставляются со страницы 1. Вероятно баги самого дисплея, но при следующей форме записи повторно строку выводит корректно:
+ * setAddress(0x00); print(0x20); print(0x20); print(0x4F); и т.д.
+ */
 void hd44780_printString(char *string) {
-	hd44780_convertStringRus(string);
-	for (uint8_t i=0; string[i] != '\0'; i++)	hd44780_print(string[i]);
+	//hd44780_convertStringRus(string);			// Раскоментировать при использовании "Страницы 0" дисплея МТ-16S2D
+	for (uint8_t i=0; string[i] != '\0'; i++)
+		hd44780_print(string[i]);
 }
 
 void hd44780_printString1(char *string) {
@@ -125,77 +133,8 @@ void hd44780_printString2(char *string) {
 
 
 void hd44780_convertStringRus(char string[]) {
-	for(uint8_t i=0; string[i] != '\0'; i++) {
-		switch(string[i]) {
-		case 'А':	string[i]=0x41;		break;
-		case 'Б':	string[i]=0xA0;		break;
-		case 'В':	string[i]=0x42;		break;
-		case 'Г':	string[i]=0xA1;		break;
-		case 'Д':	string[i]=0xE0;		break;
-		case 'Е':	string[i]=0x45;		break;
-		case 'Ё':	string[i]=0xA2;		break;
-		case 'Ж':	string[i]=0xA3;		break;
-		case 'З':	string[i]=0xA4;		break;
-		case 'И':	string[i]=0xA5;		break;
-		case 'Й':	string[i]=0xA6;		break;
-		case 'К':	string[i]=0x4B;		break;
-		case 'Л':	string[i]=0xA7;		break;
-		case 'М':	string[i]=0x4D;		break;
-		case 'Н':	string[i]=0x48;		break;
-		case 'О':	string[i]=0x4F;		break;
-		case 'П':	string[i]=0xA8;		break;
-		case 'Р':	string[i]=0x50;		break;
-		case 'С':	string[i]=0x43;		break;
-		case 'Т':	string[i]=0x54;		break;
-		case 'У':	string[i]=0xA9;		break;
-		case 'Ф':	string[i]=0xAA;		break;
-		case 'Х':	string[i]=0x58;		break;
-		case 'Ц':	string[i]=0xE1;		break;
-		case 'Ч':	string[i]=0xAB;		break;
-		case 'Ш':	string[i]=0xAC;		break;
-		case 'Щ':	string[i]=0xE2;		break;
-		case 'Ъ':	string[i]=0xAD;		break;
-		case 'Ы':	string[i]=0xAE;		break;
-		case 'Ь':	string[i]=0x62;		break;
-		case 'Э':	string[i]=0xAF;		break;
-		case 'Ю':	string[i]=0xB0;		break;
-		case 'Я':	string[i]=0xB1;		break;
-		case 'а':	string[i]=0x61;		break;
-		case 'б':	string[i]=0xB2;		break;
-		case 'в':	string[i]=0xB3;		break;
-		case 'г':	string[i]=0xB4;		break;
-		case 'д':	string[i]=0xE3;		break;
-		case 'е':	string[i]=0x65;		break;
-		case 'ё':	string[i]=0xB5;		break;
-		case 'ж':	string[i]=0xB6;		break;
-		case 'з':	string[i]=0xB7;		break;
-		case 'и':	string[i]=0xB8;		break;
-		case 'й':	string[i]=0xB9;		break;
-		case 'к':	string[i]=0xBA;		break;
-		case 'л':	string[i]=0xBB;		break;
-		case 'м':	string[i]=0xBC;		break;
-		case 'н':	string[i]=0xBD;		break;
-		case 'о':	string[i]=0x6F;		break;
-		case 'п':	string[i]=0xBE;		break;
-		case 'р':	string[i]=0x70;		break;
-		case 'с':	string[i]=0x63;		break;
-		case 'т':	string[i]=0xBF;		break;
-		case 'у':	string[i]=0x79;		break;
-		case 'ф':	string[i]=0xE4;		break;
-		case 'х':	string[i]=0x78;		break;
-		case 'ц':	string[i]=0xE5;		break;
-		case 'ч':	string[i]=0xC0;		break;
-		case 'ш':	string[i]=0xC1;		break;
-		case 'щ':	string[i]=0xE6;		break;
-		case 'ъ':	string[i]=0xC2;		break;
-		case 'ы':	string[i]=0xC3;		break;
-		case 'ь':	string[i]=0xC4;		break;
-		case 'э':	string[i]=0xC5;		break;
-		case 'ю':	string[i]=0xC6;		break;
-		case 'я':	string[i]=0xC7;		break;
-		default:	break;
-		}
-	}
+	for(uint8_t i=0; string[i] != '\0'; i++)
+		string[i] = hd44780_convertSymbolRus(string[i]);
 }
 
 char hd44780_convertSymbolRus(char symbol) {
@@ -266,6 +205,6 @@ char hd44780_convertSymbolRus(char symbol) {
 	case 'э':	return 0xC5;
 	case 'ю':	return 0xC6;
 	case 'я':	return 0xC7;
-	default:	return 0;
+	default:	return symbol;
 	}
 }
