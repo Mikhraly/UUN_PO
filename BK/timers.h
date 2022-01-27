@@ -15,7 +15,7 @@
 void timer0_init();
 void timer1_init();
 
-void delay_us(uint16_t us);
+//void delay_us(uint16_t us);
 void delay_ms(uint16_t ms);
 void delay_s(uint16_t s);
 

@@ -21,6 +21,7 @@ volatile uint8_t	num = 1;								// Номер принятого байта по UART
 volatile uint8_t	rec_byte[4];							// Массив принимаемых байт. [0] - не используется
 volatile uint8_t	tran_byte[6];							// Массив отправляемых байт. [0] - не используется
 volatile uint8_t	recMessageOK;							// Флаг завершения приема сообщения
+volatile uint16_t	counterConnectionNOK = 0;
 
 
 ISR (USART_RX_vect) {										// Функция приема байта по UART через прерывание
@@ -39,6 +40,11 @@ ISR (USART_RX_vect) {										// Функция приема байта по UART через прерывание
 		else return;				// Если КС не совпала, выйти и начать сначала
 	}
 	else num++;
+}
+
+ISR (TIMER0_COMPA_vect) {
+	counterConnectionNOK++;
+	TCNT0 = 0;
 }
 
 uint8_t distanceToProcent(const uint8_t distance, const uint8_t sensorHigh);
@@ -121,9 +127,15 @@ int main(void)
 			PORTB &= ~(1<<1);			// MAX485 на прием
 			_delay_us(200);
 			UCSRB |= (1<<RXCIE);		// Вкл прерывание по приему
+			
+			counterConnectionNOK = 0;
 		}
 		//////////////////////////////////////////////////////////////////////////
 		
+		if (counterConnectionNOK > 800) {	// 8 sec
+			counterConnectionNOK = 0;
+			if (~PIND & 1<<5) pumpOFF();
+		}
 		
 		asm("wdr");		// Сбросить WDT (обнулить значение)
     }
