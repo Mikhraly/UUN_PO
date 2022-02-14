@@ -93,7 +93,7 @@ int main(void)
 		if (myCounters.notOff > 5) myError(0x03);
 		if (myCounters.press > 5) myError(0x04);
 		if (myCounters.messageNOK > 5) myError(0x05);
-		if (myCounters.connectionNOK > 10) myError(0x06);
+		if (myCounters.connectionNOK > 6) myError(0x06);
 
     }
 }

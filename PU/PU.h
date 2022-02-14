@@ -48,7 +48,7 @@ volatile struct {			// Структура служебных флагов
 	uint8_t manOFF			:1;				// Ручная команда на ВЫКЛ
 	uint8_t myError			:1;
 	uint8_t lowWaterLevel	:1;
-} flag = {0, 0, 0, 0, 0, 0, 1, 0};
+} flag = {0, 0, 0, 1, 0, 0, 1, 0};
 
 volatile struct {
 	uint8_t notOn;
